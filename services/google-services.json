@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "34451604947",
+    "project_id": "toptop-3cb57",
+    "storage_bucket": "toptop-3cb57.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:34451604947:android:e61c0cdd25fff1125bdb26",
+        "android_client_info": {
+          "package_name": "com.zaos22.toptop"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "34451604947-51rl318ubimdovm0se8tqbk9tqbil86s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zaos22.toptop",
+            "certificate_hash": "12223088217456dbdaf108387a30e211998d29b8"
+          }
+        },
+        {
+          "client_id": "34451604947-di63uoh0il1o4c4gte1dms4fpbnf7nsd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJYBL0R3avgN07VKWGlTHu4ZVyn1015wA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "34451604947-di63uoh0il1o4c4gte1dms4fpbnf7nsd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
