@@ -14,9 +14,9 @@ export default function BusinessDashboard() {
     const theme = Colors[colorScheme ?? 'dark'];
 
     const stats = [
-        { label: 'Valoración', value: '4.8', icon: <Star size={20} color="#D6B25E" />, trend: '+0.2' },
-        { label: 'Visitas', value: '1,284', icon: <Eye size={20} color={theme.primary} />, trend: '+12%' },
-        { label: 'Reseñas', value: '86', icon: <MessageSquare size={20} color="#4A90E2" />, trend: '5 nuevas' },
+        { label: 'Rating', value: '4.8', icon: <Star size={20} color="#D6B25E" />, trend: '+0.2' },
+        { label: 'Visits', value: '1,284', icon: <Eye size={20} color={theme.primary} />, trend: '+12%' },
+        { label: 'Reviews', value: '86', icon: <MessageSquare size={20} color="#4A90E2" />, trend: '5 new' },
     ];
 
     return (
@@ -25,8 +25,8 @@ export default function BusinessDashboard() {
                 <View style={styles.topSection}>
                     <View style={styles.headerRow}>
                         <View>
-                            <Text style={[styles.welcomeText, { color: theme.textSecondary }]}>Panel de Control</Text>
-                            <Text style={[styles.businessName, { color: theme.text }]}>La Terraza del Sol</Text>
+                            <Text style={[styles.welcomeText, { color: theme.textSecondary }]}>Control Panel</Text>
+                            <Text style={[styles.businessName, { color: theme.text }]}>The Sun Terrace</Text>
                         </View>
                         <TouchableOpacity 
                             style={[styles.switchBtn, { backgroundColor: theme.primary + '20' }]}
@@ -36,7 +36,7 @@ export default function BusinessDashboard() {
                             }}
                         >
                             <User size={20} color={theme.primary} />
-                            <Text style={[styles.switchBtnText, { color: theme.primary }]}>Modo User</Text>
+                            <Text style={[styles.switchBtnText, { color: theme.primary }]}>User Mode</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -61,17 +61,17 @@ export default function BusinessDashboard() {
                     onPress={() => router.push('/business/analytics')}
                 >
                     <View>
-                        <Text style={styles.analyticsTitle}>Analíticas Detalladas</Text>
-                        <Text style={styles.analyticsSubtitle}>Consulta el rendimiento mensual</Text>
+                        <Text style={styles.analyticsTitle}>Detailed Analytics</Text>
+                        <Text style={styles.analyticsSubtitle}>Check your monthly performance</Text>
                     </View>
                     <TrendingUp size={32} color="#1C1F26" />
                 </TouchableOpacity>
 
                 {/* Announcements Board Section */}
                 <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Tablón de Anuncios</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Announcements Board</Text>
                     <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.primary + '20' }]} onPress={() => router.push('/business/create-announcement')}>
-                        <Text style={[styles.addBtnText, { color: theme.primary }]}>+ Crear Post</Text>
+                        <Text style={[styles.addBtnText, { color: theme.primary }]}>+ Create Post</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -80,17 +80,17 @@ export default function BusinessDashboard() {
                         <Bell size={24} color={theme.primary} />
                     </View>
                     <View style={styles.announcementInfo}>
-                        <Text style={[styles.announcementTitleText, { color: theme.text }]}>Anuncios Activos</Text>
-                        <Text style={[styles.announcementDesc, { color: theme.textSecondary }]}>3 publicaciones visibles para tus seguidores</Text>
+                        <Text style={[styles.announcementTitleText, { color: theme.text }]}>Active Announcements</Text>
+                        <Text style={[styles.announcementDesc, { color: theme.textSecondary }]}>3 posts visible to your followers</Text>
                     </View>
                     <Settings size={20} color={theme.textSecondary} />
                 </TouchableOpacity>
 
                 {/* Recent Reviews Section */}
                 <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Reseñas Pendientes</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Pending Reviews</Text>
                     <TouchableOpacity>
-                        <Text style={[styles.seeAll, { color: theme.primary }]}>Ver todas</Text>
+                        <Text style={[styles.seeAll, { color: theme.primary }]}>See all</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -108,15 +108,15 @@ export default function BusinessDashboard() {
                                         {[1, 2, 3, 4, 5].map(s => (
                                             <Star key={s} size={12} color="#D6B25E" fill={s <= 4 ? "#D6B25E" : "transparent"} />
                                         ))}
-                                        <Text style={[styles.reviewDate, { color: theme.textSecondary }]}>Hace 2 horas</Text>
+                                        <Text style={[styles.reviewDate, { color: theme.textSecondary }]}>2 hours ago</Text>
                                     </View>
                                 </View>
                             </View>
                             <Text style={[styles.reviewText, { color: theme.text }]} numberOfLines={2}>
-                                Excelente servicio y la comida estaba increíble. El ambiente es muy acogedor...
+                                Excellent service and the food was amazing. The atmosphere is very cozy...
                             </Text>
                             <TouchableOpacity style={[styles.replyBtn, { borderColor: theme.primary + '40' }]}>
-                                <Text style={[styles.replyBtnText, { color: theme.primary }]}>Responder</Text>
+                                <Text style={[styles.replyBtnText, { color: theme.primary }]}>Reply</Text>
                             </TouchableOpacity>
                         </View>
                     ))}
@@ -124,7 +124,7 @@ export default function BusinessDashboard() {
 
                 {/* Local Info Management */}
                 <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Mi Establecimiento</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>My Establishment</Text>
                 </View>
                 
                 <TouchableOpacity style={[styles.manageCard, { backgroundColor: theme.card }]}>
@@ -132,8 +132,8 @@ export default function BusinessDashboard() {
                         <BarChart2 size={24} color={theme.primary} />
                     </View>
                     <View style={styles.manageText}>
-                        <Text style={[styles.manageTitle, { color: theme.text }]}>Actualizar Información</Text>
-                        <Text style={[styles.manageDesc, { color: theme.textSecondary }]}>Fotos, horario y descripción</Text>
+                        <Text style={[styles.manageTitle, { color: theme.text }]}>Update Information</Text>
+                        <Text style={[styles.manageDesc, { color: theme.textSecondary }]}>Photos, hours and description</Text>
                     </View>
                     <Settings size={20} color={theme.textSecondary} />
                 </TouchableOpacity>

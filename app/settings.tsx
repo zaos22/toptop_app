@@ -156,12 +156,6 @@ export default function SettingsScreen() {
         }
     };
 
-    const handleChangeLanguage = () => {
-        const newLang = language === 'en' ? 'es' : 'en';
-        setLanguage(newLang);
-        showToast(`Language: ${newLang === 'es' ? 'Spanish' : 'English'}`, 'success');
-    }
-
     const toggleHalalMode = async (enabled: boolean) => {
         setHalalEnabled(enabled);
         if (user) {
@@ -546,12 +540,6 @@ export default function SettingsScreen() {
                             isSwitch
                             switchValue={settingsTheme === 'dark'}
                             onSwitch={toggleTheme}
-                        />
-                        <SettingItem
-                            icon={Globe}
-                            title="Language"
-                            value={language === 'en' ? 'English' : 'Spanish'}
-                            onPress={handleChangeLanguage}
                         />
                         <SettingItem
                             icon={Star}

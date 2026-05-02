@@ -28,8 +28,8 @@ const AuthContext = createContext<AuthContextType>({
     needsUsername: false,
     role: 'user',
     appMode: 'user',
-    setAppMode: () => {},
-    setNeedsUsername: () => {},
+    setAppMode: () => { },
+    setNeedsUsername: () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Importante: No hacer el callback async directo para evitar que Supabase bloquee el flujo paralelo
         const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, s) => {
             console.log(`[AuthContext] EVENTO AUTH: ${event} (${s?.user?.email ?? 'NULO'})`);
-            
+
             // 1. Actualización inmediata de estado
             setSession(s);
             setUser(s?.user ?? null);
@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             // 3. Keep the AccountService storage up to date on EVERY token refresh
             if (s && s.user) {
-                AccountService.saveCurrentAccount(s.user, s).catch(() => {});
+                AccountService.saveCurrentAccount(s.user, s).catch(() => { });
             }
 
             // 4. Ejecutar verificación de perfil si es un cambio de ID o primer arranque
@@ -121,26 +121,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     const meta = u.user_metadata || {};
                     const metaUsername = meta.username || meta.user_name || null;
                     const displayName = meta.full_name || meta.name || 'Usuario';
-                    
+
                     await supabase.from('profiles').insert({
                         id: u.id,
                         email: u.email,
                         display_name: displayName,
                         photo_url: meta.avatar_url || meta.picture || getDefaultAvatarUrl(displayName),
                         username: metaUsername,
-                        points: 0, 
-                        visited_count: 0, 
+                        points: 0,
+                        visited_count: 0,
                         reviews_count: 0,
                         role: 'user'
                     });
                     setRole('user');
-                    setNeedsUsername(!metaUsername); 
+                    setNeedsUsername(!metaUsername);
                 } else if (!profile.username) {
                     // Profile exists but has no username (e.g. created by trigger without metadata sync)
                     console.log('[AuthContext] Profile exists with null username. Attempting metadata sync...');
                     const meta = u.user_metadata || {};
                     const metaUsername = meta.username || meta.user_name || null;
-                    
+
                     if (metaUsername) {
                         // Update the existing profile with the metadata username
                         await supabase.from('profiles')
@@ -153,7 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 } else {
                     setNeedsUsername(false);
                 }
-                
+
                 if (profile?.role) {
                     setRole(profile.role);
                     // Initial app mode matches role

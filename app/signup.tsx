@@ -56,7 +56,7 @@ export default function SignupScreen() {
                         {
                             text: 'Not now', style: 'cancel', onPress: () => {
                                 showToast('Account created! Welcome to TopTop', 'success');
-                                // Dejamos que el layout central maneje la redirección
+                                // Let the central layout handle the redirection
                             }
                         },
                         {
@@ -67,7 +67,7 @@ export default function SignupScreen() {
                                     showToast('Biometric security enabled.', 'success');
                                 }
                                 showToast('Account created! Welcome to TopTop', 'success');
-                                // Dejamos que el layout central maneje la redirección
+                                // Let the central layout handle the redirection
                             }
                         }
                     ]

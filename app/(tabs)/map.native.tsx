@@ -473,7 +473,7 @@ export default function MapScreen() {
                 ) : (
                     <View style={[styles.centered, { backgroundColor: theme.background }]}>
                         <ActivityIndicator size="large" color={theme.primary} />
-                        <Text style={{ color: theme.textSecondary, marginTop: 15, fontWeight: '600' }}>Cargando mapa...</Text>
+                        <Text style={{ color: theme.textSecondary, marginTop: 15, fontWeight: '600' }}>Loading map...</Text>
                     </View>
                 )}
 
@@ -481,7 +481,7 @@ export default function MapScreen() {
                     <View style={[styles.searchBar, { backgroundColor: theme.background, borderColor: theme.card }]}>
                         <Search size={18} color={theme.textSecondary} />
                         <TextInput
-                            placeholder="Buscar un lugar..."
+                            placeholder="Search for a place..."
                             placeholderTextColor={theme.textSecondary}
                             style={[styles.searchInput, { color: theme.text }]}
                             value={searchQuery}
@@ -532,7 +532,7 @@ export default function MapScreen() {
                                     ) : (
                                         <View style={{ padding: 30, alignItems: 'center' }}>
                                             <Search size={32} color={theme.textSecondary} opacity={0.3} style={{ marginBottom: 10 }} />
-                                            <Text style={{ color: theme.textSecondary, textAlign: 'center', fontWeight: '500' }}>No se encontraron lugares cerca de ti</Text>
+                                            <Text style={{ color: theme.textSecondary, textAlign: 'center', fontWeight: '500' }}>No places found near you</Text>
                                         </View>
                                     )}
                                 </ScrollView>
@@ -578,7 +578,7 @@ export default function MapScreen() {
                                                 router.push(`/establishment/${selectedItem.id}`);
                                             }}
                                         >
-                                            <Text style={styles.actionBtnText}>Ver Detalles</Text>
+                                            <Text style={styles.actionBtnText}>View Details</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity
                                             style={[styles.iconAction, { backgroundColor: theme.backgroundSecondary }]}

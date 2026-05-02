@@ -31,12 +31,12 @@ export default function CreateAnnouncementScreen() {
 
     const handlePublish = async () => {
         if (!title || !content) {
-            showToast('Por favor, rellena el título y el contenido', 'error');
+            showToast('Please fill in the title and content', 'error');
             return;
         }
 
         try {
-            setGlobalLoading(true, 'Publicando anuncio...');
+            setGlobalLoading(true, 'Publishing announcement...');
             
             // In a real scenario, we'd need the establishmentId linked to this manager.
             // For now, we'll use a placeholder or look it up.
@@ -53,13 +53,13 @@ export default function CreateAnnouncementScreen() {
             
             setTimeout(() => {
                 setGlobalLoading(false);
-                showToast('¡Anuncio publicado correctamente!', 'success');
+                showToast('Announcement published successfully!', 'success');
                 router.back();
             }, 1500);
 
         } catch (error) {
             setGlobalLoading(false);
-            showToast('Error al publicar el anuncio', 'error');
+            showToast('Error publishing announcement', 'error');
         }
     };
 
@@ -73,27 +73,27 @@ export default function CreateAnnouncementScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <ArrowLeft size={24} color={theme.text} />
                     </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: theme.text }]}>Nuevo Anuncio</Text>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>New Announcement</Text>
                 </View>
 
                 <ScrollView contentContainerStyle={styles.scrollContent}>
-                    <Text style={[styles.label, { color: theme.textSecondary }]}>Título del Anuncio</Text>
+                    <Text style={[styles.label, { color: theme.textSecondary }]}>Announcement Title</Text>
                     <View style={[styles.inputWrapper, { backgroundColor: theme.card }]}>
                         <Type size={20} color={theme.textSecondary} style={styles.inputIcon} />
                         <TextInput
                             style={[styles.input, { color: theme.text }]}
-                            placeholder="Ej: ¡Nuevo plato en carta!"
+                            placeholder="Ex: New dish on the menu!"
                             placeholderTextColor={theme.textSecondary + '80'}
                             value={title}
                             onChangeText={setTitle}
                         />
                     </View>
 
-                    <Text style={[styles.label, { color: theme.textSecondary, marginTop: 20 }]}>Contenido</Text>
+                    <Text style={[styles.label, { color: theme.textSecondary, marginTop: 20 }]}>Content</Text>
                     <View style={[styles.textAreaWrapper, { backgroundColor: theme.card }]}>
                         <TextInput
                             style={[styles.textArea, { color: theme.text }]}
-                            placeholder="Cuéntale a tus seguidores las novedades de tu local..."
+                            placeholder="Tell your followers what's new at your venue..."
                             placeholderTextColor={theme.textSecondary + '80'}
                             multiline
                             numberOfLines={6}
@@ -103,7 +103,7 @@ export default function CreateAnnouncementScreen() {
                         />
                     </View>
 
-                    <Text style={[styles.label, { color: theme.textSecondary, marginTop: 20 }]}>Tipo de Publicación</Text>
+                    <Text style={[styles.label, { color: theme.textSecondary, marginTop: 20 }]}>Post Type</Text>
                     <View style={styles.typeRow}>
                         <TouchableOpacity 
                             style={[
@@ -113,7 +113,7 @@ export default function CreateAnnouncementScreen() {
                             onPress={() => setType('standard')}
                         >
                             <MessageSquare size={24} color={type === 'standard' ? theme.primary : theme.textSecondary} />
-                            <Text style={[styles.typeText, { color: type === 'standard' ? theme.text : theme.textSecondary }]}>Estándar</Text>
+                            <Text style={[styles.typeText, { color: type === 'standard' ? theme.text : theme.textSecondary }]}>Standard</Text>
                         </TouchableOpacity>
                         <TouchableOpacity 
                             style={[
@@ -123,13 +123,13 @@ export default function CreateAnnouncementScreen() {
                             onPress={() => setType('poll')}
                         >
                             <BarChart2 size={24} color={type === 'poll' ? theme.primary : theme.textSecondary} />
-                            <Text style={[styles.typeText, { color: type === 'poll' ? theme.text : theme.textSecondary }]}>Encuesta</Text>
+                            <Text style={[styles.typeText, { color: type === 'poll' ? theme.text : theme.textSecondary }]}>Poll</Text>
                         </TouchableOpacity>
                     </View>
 
                     <View style={[styles.infoBox, { backgroundColor: theme.primary + '10' }]}>
                         <Text style={[styles.infoText, { color: theme.primary }]}>
-                            Este anuncio será notificado automáticamente a todos tus seguidores.
+                            This announcement will be automatically notified to all your followers.
                         </Text>
                     </View>
 
@@ -137,7 +137,7 @@ export default function CreateAnnouncementScreen() {
                         style={[styles.publishBtn, { backgroundColor: theme.primary }]}
                         onPress={handlePublish}
                     >
-                        <Text style={styles.publishBtnText}>Publicar en el Tablón</Text>
+                        <Text style={styles.publishBtnText}>Publish on the Board</Text>
                         <Send size={18} color="#1C1F26" />
                     </TouchableOpacity>
                 </ScrollView>

@@ -12,7 +12,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// WebBrowser.maybeCompleteAuthSession() ya está en AuthContext
+// WebBrowser.maybeCompleteAuthSession() is already in AuthContext
 
 
 export default function LoginScreen() {
@@ -28,7 +28,7 @@ export default function LoginScreen() {
     const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
     const [selectedAccount, setSelectedAccount] = useState<SavedAccount | null>(null);
 
-    // Animación de entrada: fade + slide up
+    // Entry animation: fade + slide up
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(40)).current;
 
@@ -76,7 +76,7 @@ export default function LoginScreen() {
         try {
             const result = await AccountService.switchAccount(accountId);
             if (result.success) {
-                // Dejamos que el layout central maneje la redirección
+                // Let the root layout handle redirection
             } else {
                 showAlert({
                     title: 'Attention',
@@ -106,7 +106,7 @@ export default function LoginScreen() {
                     password: credentials.password,
                 });
                 if (error) throw error;
-                // Dejamos que el layout central maneje la redirección
+                // Let the root layout handle redirection
             } catch (error: any) {
                 console.error(error);
                 showAlert({
@@ -137,12 +137,12 @@ export default function LoginScreen() {
         try {
             const result = await AccountService.switchAccount(acc.id);
             if (result.success) {
-                // Pequeño delay para que el contexto reaccione y redireccione
+                // Small delay for context to react and redirect
                 setTimeout(() => setGlobalLoading(false), 300);
                 return;
             }
         } catch (e) {
-            console.error('[Login] Error al seleccionar cuenta:', e);
+            console.error('[Login] Error selecting account:', e);
             showToast('Could not enter the account', 'error');
             setGlobalLoading(false);
             return;
@@ -207,16 +207,16 @@ export default function LoginScreen() {
 
             if (response.type !== 'success') {
                 // El usuario canceló o hubo un error no fatal
-                console.log('[Login] Google sign-in cancelado o fallido:', response.type);
+                console.log('[Login] Google sign-in cancelled or failed:', response.type);
                 return;
             }
 
             const idToken = response.data?.idToken;
             if (!idToken) {
-                throw new Error('No se obtuvo el idToken de Google.');
+                throw new Error('Could not obtain Google idToken.');
             }
 
-            console.log('[Login] idToken obtenido, autenticando con Supabase...');
+            console.log('[Login] idToken obtained, authenticating with Supabase...');
             const { data, error } = await supabase.auth.signInWithIdToken({
                 provider: 'google',
                 token: idToken,
@@ -225,13 +225,13 @@ export default function LoginScreen() {
             if (error) throw error;
 
             console.log('[Login] Autenticación Supabase exitosa:', data.user?.email);
-            // Dejamos que el layout central maneje la redirección
+            // Let the root layout handle redirection
         } catch (error: any) {
             console.error('[Login] Error en Google Sign-In:', error);
 
             if (error.code === statusCodes.SIGN_IN_CANCELLED) {
                 // El usuario canceló manualmente, no mostramos error
-                console.log('[Login] Usuario canceló el sign-in');
+                console.log('[Login] User cancelled sign-in');
             } else if (error.code === statusCodes.IN_PROGRESS) {
                 showToast('Login already in progress', 'info');
             } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
@@ -274,7 +274,7 @@ export default function LoginScreen() {
             });
 
             if (error) throw error;
-            // Dejamos que el layout central maneje la redirección
+            // Let the root layout handle redirection
         } catch (error: any) {
             console.error(error);
             showAlert({
@@ -288,7 +288,7 @@ export default function LoginScreen() {
 
     const handleForgotPassword = async () => {
         if (!identifier) {
-            showToast('Introduce tu email primero para enviarte el enlace.', 'info');
+            showToast('Enter your email first to send you the link.', 'info');
             return;
         }
 
@@ -441,16 +441,16 @@ export default function LoginScreen() {
                         <View style={styles.businessSection}>
                             <View style={[styles.businessCard, { backgroundColor: theme.primary + '15', borderColor: theme.primary + '30' }]}>
                                 <View style={styles.businessContent}>
-                                    <Text style={[styles.businessTitle, { color: theme.text }]}>¿Eres una empresa?</Text>
+                                    <Text style={[styles.businessTitle, { color: theme.text }]}>Are you a business?</Text>
                                     <Text style={[styles.businessSubtitle, { color: theme.textSecondary }]}>
-                                        Gestiona tu local, responde a reseñas y consulta tus analíticas.
+                                        Manage your venue, respond to reviews, and check your analytics.
                                     </Text>
                                 </View>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     style={[styles.businessBtn, { backgroundColor: theme.primary }]}
                                     onPress={() => router.push('/business-landing')}
                                 >
-                                    <Text style={styles.businessBtnText}>Acceso Manager</Text>
+                                    <Text style={styles.businessBtnText}>Manager Access</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>

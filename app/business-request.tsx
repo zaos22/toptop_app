@@ -38,18 +38,18 @@ export default function BusinessRequestScreen() {
 
     const handleSubmit = async () => {
         if (!user) {
-            showToast('Debes iniciar sesión para solicitar acceso', 'error');
+            showToast('You must log in to request access', 'error');
             router.push('/login');
             return;
         }
 
         if (!form.business_name || !form.category || !form.address || !form.contact_email) {
-            showToast('Por favor, rellena los campos obligatorios', 'error');
+            showToast('Please fill in the required fields', 'error');
             return;
         }
 
         try {
-            setGlobalLoading(true, 'Enviando solicitud...');
+            setGlobalLoading(true, 'Sending request...');
             await BusinessService.submitRequest({
                 user_id: user.id,
                 ...form
@@ -57,7 +57,7 @@ export default function BusinessRequestScreen() {
             setSubmitted(true);
         } catch (error: any) {
             console.error('Error submitting business request:', error);
-            showToast('Error al enviar la solicitud. Inténtalo de nuevo.', 'error');
+            showToast('Error sending request. Please try again.', 'error');
         } finally {
             setGlobalLoading(false);
         }
@@ -70,15 +70,15 @@ export default function BusinessRequestScreen() {
                     <View style={[styles.successIcon, { backgroundColor: theme.primary + '20' }]}>
                         <CheckCircle2 size={60} color={theme.primary} />
                     </View>
-                    <Text style={[styles.successTitle, { color: theme.text }]}>¡Solicitud Recibida!</Text>
+                    <Text style={[styles.successTitle, { color: theme.text }]}>Request Received!</Text>
                     <Text style={[styles.successDesc, { color: theme.textSecondary }]}>
-                        Nuestro equipo revisará los detalles de "{form.business_name}" y se pondrá en contacto contigo a través de {form.contact_email} en las próximas 24-48 horas.
+                        Our team will review the details for "{form.business_name}" and will contact you at {form.contact_email} within the next 24-48 hours.
                     </Text>
                     <TouchableOpacity 
                         style={[styles.primaryBtn, { backgroundColor: theme.primary }]}
                         onPress={() => router.replace('/(tabs)')}
                     >
-                        <Text style={styles.primaryBtnText}>Volver al Inicio</Text>
+                        <Text style={styles.primaryBtnText}>Back to Home</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -95,23 +95,23 @@ export default function BusinessRequestScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <ArrowLeft size={24} color={theme.text} />
                     </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: theme.text }]}>Solicitar Acceso Manager</Text>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>Request Manager Access</Text>
                 </View>
 
                 <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Datos del Establecimiento</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Establishment Details</Text>
                     <Text style={[styles.sectionDesc, { color: theme.textSecondary }]}>
-                        Completa la información para que podamos verificar tu negocio.
+                        Complete the information so we can verify your business.
                     </Text>
 
                     <View style={styles.form}>
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: theme.textSecondary }]}>Nombre del Negocio *</Text>
+                            <Text style={[styles.label, { color: theme.textSecondary }]}>Business Name *</Text>
                             <View style={[styles.inputWrapper, { backgroundColor: theme.card }]}>
                                 <Building2 size={20} color={theme.textSecondary} style={styles.inputIcon} />
                                 <TextInput
                                     style={[styles.input, { color: theme.text }]}
-                                    placeholder="Ej: La Terraza del Sol"
+                                    placeholder="Ex: The Sun Terrace"
                                     placeholderTextColor={theme.textSecondary + '80'}
                                     value={form.business_name}
                                     onChangeText={(t) => setForm({...form, business_name: t})}
@@ -120,12 +120,12 @@ export default function BusinessRequestScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: theme.textSecondary }]}>Categoría *</Text>
+                            <Text style={[styles.label, { color: theme.textSecondary }]}>Category *</Text>
                             <View style={[styles.inputWrapper, { backgroundColor: theme.card }]}>
                                 <MapPin size={20} color={theme.textSecondary} style={styles.inputIcon} />
                                 <TextInput
                                     style={[styles.input, { color: theme.text }]}
-                                    placeholder="Ej: Restaurante, Bar, Café..."
+                                    placeholder="Ex: Restaurant, Bar, Cafe..."
                                     placeholderTextColor={theme.textSecondary + '80'}
                                     value={form.category}
                                     onChangeText={(t) => setForm({...form, category: t})}
@@ -134,12 +134,12 @@ export default function BusinessRequestScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: theme.textSecondary }]}>Dirección Completa *</Text>
+                            <Text style={[styles.label, { color: theme.textSecondary }]}>Full Address *</Text>
                             <View style={[styles.inputWrapper, { backgroundColor: theme.card }]}>
                                 <MapPin size={20} color={theme.textSecondary} style={styles.inputIcon} />
                                 <TextInput
                                     style={[styles.input, { color: theme.text }]}
-                                    placeholder="Calle, Número, Ciudad..."
+                                    placeholder="Street, Number, City..."
                                     placeholderTextColor={theme.textSecondary + '80'}
                                     value={form.address}
                                     onChangeText={(t) => setForm({...form, address: t})}
@@ -147,15 +147,15 @@ export default function BusinessRequestScreen() {
                             </View>
                         </View>
 
-                        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 20 }]}>Contacto</Text>
+                        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 20 }]}>Contact</Text>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: theme.textSecondary }]}>Email de contacto *</Text>
+                            <Text style={[styles.label, { color: theme.textSecondary }]}>Contact Email *</Text>
                             <View style={[styles.inputWrapper, { backgroundColor: theme.card }]}>
                                 <Mail size={20} color={theme.textSecondary} style={styles.inputIcon} />
                                 <TextInput
                                     style={[styles.input, { color: theme.text }]}
-                                    placeholder="negocio@email.com"
+                                    placeholder="business@email.com"
                                     keyboardType="email-address"
                                     autoCapitalize="none"
                                     placeholderTextColor={theme.textSecondary + '80'}
@@ -166,7 +166,7 @@ export default function BusinessRequestScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: theme.textSecondary }]}>Teléfono</Text>
+                            <Text style={[styles.label, { color: theme.textSecondary }]}>Phone</Text>
                             <View style={[styles.inputWrapper, { backgroundColor: theme.card }]}>
                                 <Phone size={20} color={theme.textSecondary} style={styles.inputIcon} />
                                 <TextInput
@@ -185,20 +185,20 @@ export default function BusinessRequestScreen() {
                                 style={[styles.primaryBtn, { backgroundColor: theme.primary, marginTop: 30 }]}
                                 onPress={() => router.push('/login')}
                             >
-                                <Text style={styles.primaryBtnText}>Iniciar Sesión para Enviar</Text>
+                                <Text style={styles.primaryBtnText}>Log In to Submit</Text>
                             </TouchableOpacity>
                         ) : (
                             <TouchableOpacity 
                                 style={[styles.primaryBtn, { backgroundColor: theme.primary, marginTop: 30 }]}
                                 onPress={handleSubmit}
                             >
-                                <Text style={styles.primaryBtnText}>Enviar Solicitud</Text>
+                                <Text style={styles.primaryBtnText}>Submit Request</Text>
                                 <Send size={18} color="#1C1F26" />
                             </TouchableOpacity>
                         )}
 
                         <Text style={[styles.disclaimer, { color: theme.textSecondary }]}>
-                            Al enviar esta solicitud, aceptas que TopTop verifique la propiedad del establecimiento.
+                            By submitting this request, you agree to TopTop verifying ownership of the establishment.
                         </Text>
                     </View>
                 </ScrollView>

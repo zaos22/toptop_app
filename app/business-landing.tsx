@@ -15,23 +15,23 @@ export default function BusinessLandingScreen() {
     const features = [
         {
             icon: <BarChart3 size={24} color={theme.primary} />,
-            title: 'Analíticas Avanzadas',
-            description: 'Descubre quién te visita, qué opinan y cómo mejorar tu puntuación TopTop.'
+            title: 'Advanced Analytics',
+            description: 'Discover who visits you, what they think, and how to improve your TopTop score.'
         },
         {
             icon: <MessageSquare size={24} color={theme.primary} />,
-            title: 'Gestión de Reseñas',
-            description: 'Responde a tus clientes y fideliza a los usuarios que te valoran positivamente.'
+            title: 'Review Management',
+            description: 'Respond to your customers and retain users who value you positively.'
         },
         {
             icon: <ShieldCheck size={24} color={theme.primary} />,
-            title: 'Perfil Verificado',
-            description: 'Obtén el sello de confianza y destaca sobre la competencia en los rankings.'
+            title: 'Verified Profile',
+            description: 'Get the trust badge and stand out from the competition in the rankings.'
         },
         {
             icon: <Users size={24} color={theme.primary} />,
-            title: 'Alcance Exclusivo',
-            description: 'Aparece en las primeras posiciones para usuarios premium y foodies.'
+            title: 'Exclusive Reach',
+            description: 'Appear in the top positions for premium users and foodies.'
         }
     ];
 
@@ -54,9 +54,9 @@ export default function BusinessLandingScreen() {
                     <View style={[styles.iconBadge, { backgroundColor: theme.primary + '20' }]}>
                         <Building2 size={40} color={theme.primary} />
                     </View>
-                    <Text style={[styles.heroTitle, { color: theme.text }]}>Lleva tu local al siguiente nivel</Text>
+                    <Text style={[styles.heroTitle, { color: theme.text }]}>Take your venue to the next level</Text>
                     <Text style={[styles.heroSubtitle, { color: theme.textSecondary }]}>
-                        Únete a la plataforma más exclusiva de reviews y gestiona tu reputación con herramientas profesionales.
+                        Join the most exclusive reviews platform and manage your reputation with professional tools.
                     </Text>
                 </View>
 
@@ -75,7 +75,7 @@ export default function BusinessLandingScreen() {
                 <View style={[styles.infoBox, { backgroundColor: theme.backgroundSecondary, borderColor: theme.card }]}>
                     <CheckCircle2 size={20} color={theme.primary} />
                     <Text style={[styles.infoText, { color: theme.text }]}>
-                        Más de 500 establecimientos ya están creciendo con TopTop.
+                        More than 500 establishments are already growing with TopTop.
                     </Text>
                 </View>
             </ScrollView>
@@ -85,7 +85,7 @@ export default function BusinessLandingScreen() {
                     style={[styles.primaryBtn, { backgroundColor: theme.primary }]}
                     onPress={() => router.push('/business-request')}
                 >
-                    <Text style={styles.primaryBtnText}>Solicitar Acceso</Text>
+                    <Text style={styles.primaryBtnText}>Request Access</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                     style={styles.secondaryBtn}
@@ -94,7 +94,7 @@ export default function BusinessLandingScreen() {
                         router.push('/business/dashboard');
                     }}
                 >
-                    <Text style={[styles.secondaryBtnText, { color: theme.text }]}>Ya soy Manager (Log In)</Text>
+                    <Text style={[styles.secondaryBtnText, { color: theme.text }]}>I am already a Manager (Log In)</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

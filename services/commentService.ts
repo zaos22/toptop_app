@@ -62,7 +62,7 @@ export const getReviewComments = async (reviewId: string, currentUserId?: string
             id: c.id,
             review_id: c.review_id,
             user_id: c.user_id,
-            user_name: c.profiles?.display_name || 'Usuario',
+            user_name: c.profiles?.display_name || 'User',
             user_avatar: c.profiles?.photo_url,
             content: c.content,
             parent_id: c.parent_id,
@@ -132,7 +132,7 @@ export const addReviewComment = async (
             id: data.id,
             review_id: data.review_id,
             user_id: data.user_id,
-            user_name: data.profiles?.display_name || 'Usuario',
+            user_name: data.profiles?.display_name || 'User',
             user_avatar: data.profiles?.photo_url,
             content: data.content,
             parent_id: data.parent_id,
@@ -214,8 +214,8 @@ async function handleCommentLikeNotification(commentId: string, fromUserId: stri
             user_id: comment.user_id,
             sender_id: fromUserId,
             type: 'like',
-            title: '¡Le gusta tu comentario! ❤️',
-            body: `@${sender?.display_name || 'Alguien'} le ha dado like a tu comentario.`,
+            title: 'Liked your comment! ❤️',
+            body: `@${sender?.display_name || 'Someone'} liked your comment.`,
             data: { type: 'COMMENT_LIKE', reviewId: comment.review_id, commentId },
             is_read: false
         });
@@ -303,8 +303,8 @@ async function handleSuperLikeNotification(commentId: string) {
             user_id: comment.user_id,
             sender_id: reviewAuthorId,
             type: 'like',
-            title: '¡Top del autor! 👑',
-            body: `@${author?.display_name || 'El autor'} le ha dado un Super Like a tu comentario.`,
+            title: 'Author Top! 👑',
+            body: `@${author?.display_name || 'The author'} gave your comment a Super Like.`,
             data: { type: 'SUPER_LIKE', reviewId: comment.review_id, commentId },
             is_read: false
         });
@@ -351,8 +351,8 @@ async function handleCommentNotification(reviewId: string, fromUserId: string, c
                     user_id: parentComment.user_id,
                     sender_id: fromUserId,
                     type: 'comment',
-                    title: 'Nueva respuesta 💬',
-                    body: `@${sender?.display_name || 'Alguien'} ha respondido a tu comentario.`,
+                    title: 'New reply 💬',
+                    body: `@${sender?.display_name || 'Someone'} replied to your comment.`,
                     data: { type: 'COMMENT', reviewId, commentId },
                     is_read: false
                 });
@@ -372,8 +372,8 @@ async function handleCommentNotification(reviewId: string, fromUserId: string, c
                     user_id: review.user_id,
                     sender_id: fromUserId,
                     type: 'comment',
-                    title: 'Nuevo comentario 💬',
-                    body: `@${sender?.display_name || 'Alguien'} ha comentado en tu reseña.`,
+                    title: 'New comment 💬',
+                    body: `@${sender?.display_name || 'Someone'} commented on your review.`,
                     data: { type: 'COMMENT', reviewId, establishmentId: review.establishment_id, commentId },
                     is_read: false
                 });

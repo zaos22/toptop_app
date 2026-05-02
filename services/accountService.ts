@@ -27,7 +27,7 @@ export const AccountService = {
             const existingAccount = accounts.find(a => a.id === user.id);
 
             // Use metadata directly, or keep existing account values if metadata is empty
-            let displayName = user.user_metadata?.full_name || user.user_metadata?.name || existingAccount?.displayName || 'Usuario';
+            let displayName = user.user_metadata?.full_name || user.user_metadata?.name || existingAccount?.displayName || 'User';
             let photoURL = user.user_metadata?.avatar_url || user.user_metadata?.picture || existingAccount?.photoURL;
 
             const newAccount: SavedAccount = {
@@ -83,7 +83,7 @@ export const AccountService = {
                 return { success: false, requiresAuth: true };
             }
 
-            // Timeout de 8 segundos para evitar bloqueos si la red falla o el token es inválido
+            // 8s timeout to avoid blocks if network fails or token is invalid
             const sessionPromise = supabase.auth.setSession({
                 access_token: account.session.access_token,
                 refresh_token: account.session.refresh_token,
@@ -96,11 +96,11 @@ export const AccountService = {
             const { error }: any = await Promise.race([sessionPromise, timeoutPromise]);
 
             if (error) {
-                console.warn('[AccountService] Error o Expired session:', error.message);
+                console.warn('[AccountService] Error or Expired session:', error.message);
                 return { success: false, requiresAuth: true, email: account.email };
             }
 
-            // Actualizar discretamente el timestamp de última actividad
+            // Silently update the last activity timestamp
             this.getSavedAccounts().then(accounts => {
                 const updated = accounts.map(a =>
                     a.id === accountId ? { ...a, lastActive: new Date().toISOString() } : a
@@ -135,34 +135,34 @@ export const AccountService = {
     /**
      * Completely deletes user record and associated data (profiles, etc)
      */    async deleteUserAccount(userId: string) {
-        console.log('[AccountService] EXTERMINIO TOTAL EN CURSO PARA:', userId);
+        console.log('[AccountService] TOTAL WIPEOUT IN PROGRESS FOR:', userId);
         
         const checkError = (res: { error: any }, step: string, isCritical = false) => {
             if (res.error) {
-                console.error(`[AccountService] Error en paso: ${step}`, res.error);
+                console.error(`[AccountService] Error in step: ${step}`, res.error);
                 if (isCritical) {
-                    throw new Error(`Error en ${step}: ${res.error.message || JSON.stringify(res.error)}`);
+                    throw new Error(`Error in ${step}: ${res.error.message || JSON.stringify(res.error)}`);
                 }
             }
         };
 
         try {
-            // 0. Obtener IDs de sus reseñas para borrar dependencias (likes/comentarios de otros)
+            // 0. Get review IDs to delete dependencies (likes/comments from others)
             const { data: userReviews } = await supabase.from('reviews').select('id').eq('user_id', userId);
             const reviewIds = userReviews?.map(r => r.id) || [];
 
             if (reviewIds.length > 0) {
-                console.log(`[AccountService] Borrando dependencias de ${reviewIds.length} reseñas...`);
-                checkError(await supabase.from('review_likes').delete().in('review_id', reviewIds), 'likes en reseñas del usuario');
-                checkError(await supabase.from('review_comments').delete().in('review_id', reviewIds), 'comentarios en reseñas del usuario');
+                console.log(`[AccountService] Deleting dependencies for ${reviewIds.length} reviews...`);
+                checkError(await supabase.from('review_likes').delete().in('review_id', reviewIds), 'likes on user reviews');
+                checkError(await supabase.from('review_comments').delete().in('review_id', reviewIds), 'comments on user reviews');
             }
 
-            // 1. Borrar datos donde el usuario es el SUJETO
+            // 1. Delete data where the user is the SUBJECT
             const tables = [
                 { name: 'notifications', userCol: 'user_id' },
-                { name: 'notifications', userCol: 'sender_id' }, // Notificaciones que él envió
+                { name: 'notifications', userCol: 'sender_id' }, // Notifications he sent
                 { name: 'follows', userCol: 'follower_id' },
-                { name: 'follows', userCol: 'target_id' },     // Borrar a quien le seguía
+                { name: 'follows', userCol: 'target_id' },     // Delete those following him
                 { name: 'review_likes', userCol: 'user_id' },
                 { name: 'comment_likes', userCol: 'user_id' },
                 { name: 'review_comments', userCol: 'user_id' },
@@ -171,55 +171,55 @@ export const AccountService = {
             ];
 
             for (const t of tables) {
-                console.log(`[AccountService] Borrando ${t.name} (col: ${t.userCol})...`);
-                checkError(await supabase.from(t.name).delete().eq(t.userCol, userId), `tabla ${t.name}`);
+                console.log(`[AccountService] Deleting ${t.name} (col: ${t.userCol})...`);
+                checkError(await supabase.from(t.name).delete().eq(t.userCol, userId), `table ${t.name}`);
             }
 
-            // 2. Limpiar listas
+            // 2. Clean lists
             const { data: lists } = await supabase.from('user_lists').select('id').eq('user_id', userId);
             if (lists && lists.length > 0) {
                 const listIds = lists.map(l => l.id);
-                checkError(await supabase.from('list_items').delete().in('list_id', listIds), 'items de listas');
-                checkError(await supabase.from('user_lists').delete().eq('user_id', userId), 'listas');
+                checkError(await supabase.from('list_items').delete().in('list_id', listIds), 'list items');
+                checkError(await supabase.from('user_lists').delete().eq('user_id', userId), 'lists');
             }
 
-            // 3. PASO CLAVE: Borrar el perfil público (CRITICO)
-            console.log('[AccountService] Borrando perfil...');
+            // 3. KEY STEP: Delete public profile (CRITICAL)
+            console.log('[AccountService] Deleting profile...');
             const profRes = await supabase.from('profiles').delete().eq('id', userId);
-            checkError(profRes, 'borrado de perfil', true); // TRUE = Lanzará error si falla
+            checkError(profRes, 'profile deletion', true); // TRUE = Will throw if fails
 
-            // 4. Intentar borrar el usuario de la autenticación de Supabase (Requires RPC)
-            console.log('[AccountService] Intentando borrar identidad completa de auth.users...');
+            // 4. Try to delete the user from Supabase auth (Requires RPC)
+            console.log('[AccountService] Attempting to delete full identity from auth.users...');
             const { error: rpcError } = await supabase.rpc('delete_user');
             if (rpcError) {
-                console.warn('[AccountService] RPC delete_user no disponible o falló (es necesario configurarlo en Supabase). Fallback a limpiar metadatos.', rpcError);
-                // Si el RPC falla, hacemos fallback a limpiar metadatos de identidad actuales
+                console.warn('[AccountService] RPC delete_user not available or failed (it needs to be configured in Supabase). Fallback to cleaning metadata.', rpcError);
+                // If RPC fails, fallback to cleaning current identity metadata
                 await supabase.auth.updateUser({
                     data: { 
                         username: null, 
                         user_name: null, 
                         display_name: null,
-                        full_name: 'Cuenta Eliminada',
+                        full_name: 'Deleted Account',
                         avatar_url: null,
                         onboarded: false 
                     }
                 });
             } else {
-                console.log('[AccountService] Usuario borrado de auth.users con éxito.');
+                console.log('[AccountService] User deleted from auth.users successfully.');
             }
 
-            // 5. Limpieza local y Logout obligatorio
+            // 5. Local cleanup and mandatory logout
             await this.removeAccount(userId);
             
-            // Limpia TOTAL de tokens y estados para forzar re-auth limpia
+            // TOTAL cleanup of tokens and states to force clean re-auth
             const keys = await AsyncStorage.getAllKeys();
             const toRemove = keys.filter(k => k.includes('supabase.auth') || k.includes('sb-'));
             for (const k of toRemove) await AsyncStorage.removeItem(k);
 
-            console.log('[AccountService] Exterminio finalizado.');
+            console.log('[AccountService] Wipeout finished.');
             return true;
         } catch (error: any) {
-            console.error('[AccountService] ERROR CRITICO EN EXTERMINIO:', error);
+            console.error('[AccountService] CRITICAL ERROR IN WIPEOUT:', error);
             throw error;
         }
     },
