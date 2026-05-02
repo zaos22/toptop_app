@@ -456,13 +456,31 @@ export default function ReviewDetailScreen() {
                     }
                 }}
             >
-                <Image
-                    source={{ uri: comment.user_avatar || getDefaultAvatarUrl(comment.user_name || 'User') }}
-                    style={isReply ? styles.replyAvatar : styles.commentAvatar}
-                />
+                <TouchableOpacity 
+                    onPress={() => {
+                        if (comment.user_id) {
+                            setGlobalLoading(true, 'Loading Top Profile...');
+                            router.push({ pathname: "/user/[id]", params: { id: comment.user_id } });
+                        }
+                    }}
+                >
+                    <Image
+                        source={{ uri: comment.user_avatar || getDefaultAvatarUrl(comment.user_name || 'User') }}
+                        style={isReply ? styles.replyAvatar : styles.commentAvatar}
+                    />
+                </TouchableOpacity>
                 <View style={styles.commentContent}>
                     <View style={styles.commentHeaderRow}>
-                        <Text style={[styles.commentUser, { color: theme.text }]}>{comment.user_name}</Text>
+                        <TouchableOpacity 
+                            onPress={() => {
+                                if (comment.user_id) {
+                                    setGlobalLoading(true, 'Abriendo perfil...');
+                                    router.push({ pathname: "/user/[id]", params: { id: comment.user_id } });
+                                }
+                            }}
+                        >
+                            <Text style={[styles.commentUser, { color: theme.text }]}>{comment.user_name}</Text>
+                        </TouchableOpacity>
                         <Text style={[styles.commentDate, { color: theme.textSecondary }]}>
                             {new Date(comment.created_at).toLocaleDateString()}
                         </Text>
@@ -583,7 +601,12 @@ export default function ReviewDetailScreen() {
                             <View style={styles.userSection}>
                                 <TouchableOpacity
                                     style={{ flexDirection: 'row', alignItems: 'center' }}
-                                    onPress={() => review.userId && router.push({ pathname: "/user/[id]", params: { id: review.userId } })}
+                                    onPress={() => {
+                                        if (review.userId) {
+                                            setGlobalLoading(true, 'Loading Top Profile...');
+                                            router.push({ pathname: "/user/[id]", params: { id: review.userId } });
+                                        }
+                                    }}
                                 >
                                     <Image
                                         source={{ uri: review.user_avatar || getDefaultAvatarUrl(review.user_name || 'User') }}

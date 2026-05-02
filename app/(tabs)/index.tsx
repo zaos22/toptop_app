@@ -3,6 +3,7 @@ import GemCarousel from '@/components/GemCarousel';
 import RankingBlock from '@/components/RankingBlock';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
+import { useGlobalUI } from '@/context/GlobalUIContext';
 import { useSettings } from '@/context/SettingsContext';
 import { Establishment } from '@/services/establishmentService';
 import { getGooglePlaceDetails, getPhotoUrl, getPlaceGeometry, searchLocations, searchNearbyPlaces, searchPlaces } from '@/services/googleMapsService';
@@ -32,6 +33,7 @@ export default function TopScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme as keyof typeof Colors] || Colors.dark;
   const { halalEnabled } = useSettings();
+  const { setGlobalLoading } = useGlobalUI();
 
   const [loading, setLoading] = useState(true);
   const [hiddenGems, setHiddenGems] = useState<any[]>([]);
@@ -623,6 +625,7 @@ export default function TopScreen() {
           style={[styles.searchResultItem, { backgroundColor: theme.card }]}
           onPress={() => {
             setShowSearchResults(false);
+            setGlobalLoading(true, 'Loading Top Profile...');
             router.push(`/user/${item.uid}`);
           }}
         >

@@ -1,29 +1,26 @@
+import { AnnouncementBoard } from '@/components/AnnouncementBoard';
 import { CommentText } from '@/components/CommentText';
 import { MarqueeText } from '@/components/MarqueeText';
+import { SocialShareCard } from '@/components/SocialShareCard';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobalUI } from '@/context/GlobalUIContext';
+import { useSettings } from '@/context/SettingsContext';
+import { establishmentFollowService } from '@/services/establishmentFollowService';
 import { getInternalReviews, Review } from '@/services/establishmentService';
 import { getGooglePlaceDetails, getPhotoUrl, GooglePlaceDetails } from '@/services/googleMapsService';
 import { addToList, createList, getUserLists, isEstablishmentFavorited, removeFromList } from '@/services/listService';
-import { followUser, isFollowing, unfollowUser } from '@/services/userProfileService';
+import { ShareService } from '@/services/shareService';
 import { getCategoryFromTypes } from '@/utils/categoryUtils';
 import { getPriceInfo } from '@/utils/priceUtils';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, Globe, Heart, List, ListPlus, LogIn, MapPin, Phone, Share2 as ShareIcon, ShieldCheck, Star, Trash2, Wallet, X, Users } from 'lucide-react-native';
-import React, { useEffect, useState, useRef } from 'react';
-import { ActivityIndicator, Alert, Dimensions, FlatList, Image, Linking, Modal, Share, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import ViewShot from 'react-native-view-shot';
-import { ShareService } from '@/services/shareService';
-import { SocialShareCard } from '@/components/SocialShareCard';
 import { getDefaultAvatarUrl } from '@/utils/userUtils';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ChevronLeft, Globe, Heart, List, ListPlus, LogIn, MapPin, Phone, Share2 as ShareIcon, ShieldCheck, Star, Trash2, Users, Wallet, X } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Dimensions, FlatList, Image, Linking, Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, Extrapolate, interpolate, runOnJS, useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSpring, withTiming, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSettings } from '@/context/SettingsContext';
-import { AnnouncementBoard } from '@/components/AnnouncementBoard';
-import { establishmentFollowService } from '@/services/establishmentFollowService';
-import { supabase } from '@/config/supabase';
 
 const { width } = Dimensions.get('window');
 
@@ -315,7 +312,7 @@ export default function EstablishmentDetailScreen() {
 
         const placeId = Array.isArray(id) ? id[0] : id;
         const previousStatus = isFollowingEstablishment;
-        
+
         // Optimistic UI update
         setIsFollowingEstablishment(!previousStatus);
         setFollowerCount(prev => previousStatus ? Math.max(0, prev - 1) : prev + 1);
@@ -387,310 +384,318 @@ export default function EstablishmentDetailScreen() {
         >
             {/* TAB 1: DETAILS */}
             <View style={{ width, flex: 1 }}>
-            {/* Floating Review Button (Appears on scroll) */}
-            <Animated.View style={floatingButtonStyle} pointerEvents={showFloatingButton ? 'auto' : 'none'}>
-                <TouchableOpacity
-                    style={[styles.floatingAddBtn, { backgroundColor: theme.primary, shadowColor: theme.primary }]}
-                    onPress={() => router.push({
-                        pathname: '/add-review',
-                        params: {
-                            establishmentId: id,
-                            establishmentName: googleData.name
-                        }
-                    })}
-                >
-                    <Star size={22} color="#1C1F26" fill="#1C1F26" />
-                    <Text style={styles.floatingAddBtnText}>Write review</Text>
-                </TouchableOpacity>
-            </Animated.View>
-
-
-            {/* Fixed Header Overlay */}
-            <View style={[styles.headerActions, { paddingTop: insets.top + 10 }]} pointerEvents="box-none">
-                <TouchableOpacity style={[styles.headerIconBtn, { backgroundColor: 'rgba(28, 31, 38, 0.5)' }]} onPress={() => router.back()}>
-                    <ChevronLeft size={24} color="#fff" />
-                </TouchableOpacity>
-
-                <View style={styles.rightActionsColumn} pointerEvents="box-none">
-                    <TouchableOpacity style={[styles.headerIconBtn, { backgroundColor: 'rgba(28, 31, 38, 0.5)' }]} onPress={handleShare}>
-                        <ShareIcon size={20} color="#fff" />
+                {/* Floating Review Button (Appears on scroll) */}
+                <Animated.View style={floatingButtonStyle} pointerEvents={showFloatingButton ? 'auto' : 'none'}>
+                    <TouchableOpacity
+                        style={[styles.floatingAddBtn, { backgroundColor: theme.primary, shadowColor: theme.primary }]}
+                        onPress={() => router.push({
+                            pathname: '/add-review',
+                            params: {
+                                establishmentId: id,
+                                establishmentName: googleData.name
+                            }
+                        })}
+                    >
+                        <Star size={22} color="#1C1F26" fill="#1C1F26" />
+                        <Text style={styles.floatingAddBtnText}>Write review</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.headerIconBtn, { backgroundColor: 'rgba(28, 31, 38, 0.5)' }]} onPress={handleFavoritePress}>
-                        <Heart size={20} color={isLiked ? theme.error : "#fff"} fill={isLiked ? theme.error : "transparent"} />
+                </Animated.View>
+
+
+                {/* Fixed Header Overlay */}
+                <View style={[styles.headerActions, { paddingTop: insets.top + 10 }]} pointerEvents="box-none">
+                    <TouchableOpacity style={[styles.headerIconBtn, { backgroundColor: 'rgba(28, 31, 38, 0.5)' }]} onPress={() => router.back()}>
+                        <ChevronLeft size={24} color="#fff" />
                     </TouchableOpacity>
-                </View>
-            </View>
 
-            <Animated.ScrollView
-                ref={scrollViewRef}
-                showsVerticalScrollIndicator={false}
-                onScroll={onScroll}
-                scrollEventThrottle={16}
-                contentContainerStyle={{ paddingBottom: Math.max(100, insets.bottom + 80) }}
-            >
-
-                {/* Hero Section - Animated Carousel */}
-                <View style={styles.heroContainer}>
-                    <FlatList
-                        ref={flatListRef}
-                        data={googleData.photos || []}
-                        horizontal
-                        pagingEnabled
-                        showsHorizontalScrollIndicator={false}
-                        keyExtractor={(_, index) => index.toString()}
-                        onMomentumScrollEnd={(e) => {
-                            const x = e.nativeEvent.contentOffset.x;
-                            const index = Math.round(x / width);
-                            setActiveImageIndex(index);
-                        }}
-                        renderItem={({ item }) => (
-                            <AnimatedCarouselItem photoReference={item.photo_reference} width={width} />
-                        )}
-                        ListEmptyComponent={
-                            <Image
-                                source={{ uri: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=800&q=80' }}
-                                style={{ width: width, height: 400 }}
-                            />
-                        }
-                    />
-
-                    {/* Hero Overlay - Compact & Non-blocking */}
-                    <View style={styles.heroOverlay} pointerEvents="box-none">
-                        <View style={styles.heroCompactRow} pointerEvents="box-none">
-                            {/* Rating Badge */}
-                            <View style={[styles.scoreBadgeCompact, { backgroundColor: theme.ranking1 }]}>
-                                <Text style={styles.scoreTextSmall}>{googleData.rating || 'N/A'}</Text>
-                            </View>
-
-                            <View style={{ flex: 1, marginHorizontal: 15 }} pointerEvents="box-none">
-                                <MarqueeText
-                                    text={googleData.name}
-                                    style={styles.heroNameCompact}
-                                    containerStyle={{ flex: 1 }}
-                                />
-                                <View style={styles.heroBadgeRow} pointerEvents="box-none">
-                                    <View style={[styles.gemLabel, { backgroundColor: theme.primary }]}>
-                                        <Text style={styles.gemLabelText}>VERIFIED</Text>
-                                    </View>
-                                    <Text style={styles.heroCategorySmall} numberOfLines={1}>{getCategoryFromTypes(googleData.types, googleData.name).toUpperCase()}</Text>
-                                </View>
-                            </View>
-
-
-                            {/* Pagination Dots - Moved inside for better touch area */}
-                            {googleData.photos && googleData.photos.length > 1 && (
-                                <View style={styles.compactPagination}>
-                                    {googleData.photos.slice(0, 10).map((_, i) => ( // limit dots if too many
-                                        <View
-                                            key={i}
-                                            style={[
-                                                styles.dotSmall,
-                                                { backgroundColor: i === activeImageIndex ? theme.primary : 'rgba(255,255,255,0.3)' }
-                                            ]}
-                                        />
-                                    ))}
-                                </View>
-                            )}
-                        </View>
-                    </View>
-                </View>
-
-                {/* Content */}
-                <View style={[styles.content, { backgroundColor: theme.background }]}>
-                    <View style={styles.actionRow}>
-                        {googleData.website && (
-                            <TouchableOpacity
-                                style={[styles.primaryAction, { backgroundColor: theme.primary }]}
-                                onPress={() => Linking.openURL(googleData.website!)}
-                            >
-                                <Globe size={18} color="#1C1F26" style={styles.actionIcon} />
-                                <Text style={styles.primaryActionText}>
-                                    {googleData.website.toLowerCase().endsWith('.pdf') ? 'View Menu' : 'Visit Website'}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-                        <TouchableOpacity
-                            style={[styles.secondaryAction, { borderColor: theme.card }]}
-                            onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${googleData.name}&query_place_id=${googleData.place_id}`)}
-                        >
-                            <MapPin size={18} color={theme.text} style={styles.actionIcon} />
-                            <Text style={[styles.secondaryActionText, { color: theme.text }]}>Directions</Text>
+                    <View style={styles.rightActionsColumn} pointerEvents="box-none">
+                        <TouchableOpacity style={[styles.headerIconBtn, { backgroundColor: 'rgba(28, 31, 38, 0.5)' }]} onPress={handleShare}>
+                            <ShareIcon size={20} color="#fff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.headerIconBtn, { backgroundColor: 'rgba(28, 31, 38, 0.5)' }]} onPress={handleFavoritePress}>
+                            <Heart size={20} color={isLiked ? theme.error : "#fff"} fill={isLiked ? theme.error : "transparent"} />
                         </TouchableOpacity>
                     </View>
+                </View>
 
-                    {/* Contact Info */}
-                    <View style={styles.section}>
-                        <View style={styles.contactItem}>
-                            <MapPin size={20} color={theme.textSecondary} />
-                            <Text style={[styles.contactText, { color: theme.text }]}>{googleData.formatted_address}</Text>
-                        </View>
-                        {googleData.formatted_phone_number && (
-                            <View style={[styles.contactItem, { marginTop: 15 }]}>
-                                <Phone size={20} color={theme.textSecondary} />
-                                <Text style={[styles.contactText, { color: theme.text }]}>{googleData.formatted_phone_number}</Text>
-                            </View>
-                        )}
+                <Animated.ScrollView
+                    ref={scrollViewRef}
+                    showsVerticalScrollIndicator={false}
+                    onScroll={onScroll}
+                    scrollEventThrottle={16}
+                    contentContainerStyle={{ paddingBottom: Math.max(100, insets.bottom + 80) }}
+                >
 
-                        <View style={styles.followRow}>
-                            <TouchableOpacity 
-                                style={[
-                                    styles.followSectionBtn, 
-                                    { backgroundColor: isFollowingEstablishment ? theme.card : theme.primary }
-                                ]}
-                                onPress={handleFollowToggle}
-                            >
-                                <Heart 
-                                    size={18} 
-                                    color={isFollowingEstablishment ? theme.primary : '#1C1F26'} 
-                                    fill={isFollowingEstablishment ? theme.primary : 'transparent'} 
-                                    style={{ marginRight: 8 }}
-                                />
-                                <Text style={[
-                                    styles.followSectionBtnText, 
-                                    { color: isFollowingEstablishment ? theme.text : '#1C1F26' }
-                                ]}>
-                                    {isFollowingEstablishment ? 'Following' : 'Follow'}
-                                </Text>
-                            </TouchableOpacity>
-
-                            {/* Follower Counter */}
-                            <View style={styles.followerBadge}>
-                                <Users size={14} color={theme.textSecondary} />
-                                <Text style={styles.followerCount}>
-                                    {followerCount} {followerCount === 1 ? 'follower' : 'followers'}
-                                </Text>
-                            </View>
-
-                            {!isFollowingEstablishment && (
-                                <Animated.View style={[styles.swipeHintInline, horizontalIndicatorStyle]}>
-                                    <Text style={[styles.swipeHintText, { color: theme.primary }]}>Slide to see news »</Text>
-                                </Animated.View>
+                    {/* Hero Section - Animated Carousel */}
+                    <View style={styles.heroContainer}>
+                        <FlatList
+                            ref={flatListRef}
+                            data={googleData.photos || []}
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            keyExtractor={(_, index) => index.toString()}
+                            onMomentumScrollEnd={(e) => {
+                                const x = e.nativeEvent.contentOffset.x;
+                                const index = Math.round(x / width);
+                                setActiveImageIndex(index);
+                            }}
+                            renderItem={({ item }) => (
+                                <AnimatedCarouselItem photoReference={item.photo_reference} width={width} />
                             )}
-                        </View>
-                        {priceInfo && (
-                            <View style={[styles.contactItem, { marginTop: 15 }]}>
-                                <Wallet size={20} color={theme.primary} />
-                                <View style={styles.priceDetailRow}>
-                                    <Text style={[styles.priceDetailSymbol, { color: theme.primary }]}>{priceInfo.symbol}</Text>
-                                    {priceInfo.range ? (
-                                        <Text style={[styles.priceDetailRange, { color: theme.text }]}>{priceInfo.range}</Text>
-                                    ) : null}
+                            ListEmptyComponent={
+                                <Image
+                                    source={{ uri: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=800&q=80' }}
+                                    style={{ width: width, height: 400 }}
+                                />
+                            }
+                        />
+
+                        {/* Hero Overlay - Compact & Non-blocking */}
+                        <View style={styles.heroOverlay} pointerEvents="box-none">
+                            <View style={styles.heroCompactRow} pointerEvents="box-none">
+                                {/* Rating Badge */}
+                                <View style={[styles.scoreBadgeCompact, { backgroundColor: theme.ranking1 }]}>
+                                    <Text style={styles.scoreTextSmall}>{googleData.rating || 'N/A'}</Text>
                                 </View>
+
+                                <View style={{ flex: 1, marginHorizontal: 15 }} pointerEvents="box-none">
+                                    <MarqueeText
+                                        text={googleData.name}
+                                        style={styles.heroNameCompact}
+                                        containerStyle={{ flex: 1 }}
+                                    />
+                                    <View style={styles.heroBadgeRow} pointerEvents="box-none">
+                                        <View style={[styles.gemLabel, { backgroundColor: theme.primary }]}>
+                                            <Text style={styles.gemLabelText}>VERIFIED</Text>
+                                        </View>
+                                        <Text style={styles.heroCategorySmall} numberOfLines={1}>{getCategoryFromTypes(googleData.types, googleData.name).toUpperCase()}</Text>
+                                    </View>
+                                </View>
+
+
+                                {/* Pagination Dots - Moved inside for better touch area */}
+                                {googleData.photos && googleData.photos.length > 1 && (
+                                    <View style={styles.compactPagination}>
+                                        {googleData.photos.slice(0, 10).map((_, i) => ( // limit dots if too many
+                                            <View
+                                                key={i}
+                                                style={[
+                                                    styles.dotSmall,
+                                                    { backgroundColor: i === activeImageIndex ? theme.primary : 'rgba(255,255,255,0.3)' }
+                                                ]}
+                                            />
+                                        ))}
+                                    </View>
+                                )}
                             </View>
-                        )}
+                        </View>
                     </View>
 
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 24, marginBottom: 16 }]}>Reviews</Text>
+                    {/* Content */}
+                    <View style={[styles.content, { backgroundColor: theme.background }]}>
+                        <View style={styles.actionRow}>
+                            {googleData.website && (
+                                <TouchableOpacity
+                                    style={[styles.primaryAction, { backgroundColor: theme.primary }]}
+                                    onPress={() => Linking.openURL(googleData.website!)}
+                                >
+                                    <Globe size={18} color="#1C1F26" style={styles.actionIcon} />
+                                    <Text style={styles.primaryActionText}>
+                                        {googleData.website.toLowerCase().endsWith('.pdf') ? 'View Menu' : 'Visit Website'}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                                style={[styles.secondaryAction, { borderColor: theme.card }]}
+                                onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${googleData.name}&query_place_id=${googleData.place_id}`)}
+                            >
+                                <MapPin size={18} color={theme.text} style={styles.actionIcon} />
+                                <Text style={[styles.secondaryActionText, { color: theme.text }]}>Directions</Text>
+                            </TouchableOpacity>
                         </View>
 
-                        {/* TopTop Internal Reviews (Priority) */}
-                        {internalReviews.map((rev, i) => (
-                            <Animated.View
-                                entering={ZoomIn.duration(400).delay(i * 100)}
-                                key={rev.id || i.toString()}
-                                onLayout={(e) => {
-                                    const y = e.nativeEvent.layout.y;
-                                    // Store position relative to content container
-                                    // Add hero height (400) + actionRow + contact info approx
-                                    // But better: onLayout gives relative to parent. Parent is 'content' View.
-                                    // So we need to add the offset of 'content' View within ScrollView.
-                                    // Simplest: store relative to parent and we'll calculate final Y.
-                                    if (rev.id) reviewPositions.current[rev.id] = y + 450; // Approximated offset
-                                }}
-                            >
+                        {/* Contact Info */}
+                        <View style={styles.section}>
+                            <View style={styles.contactItem}>
+                                <MapPin size={20} color={theme.textSecondary} />
+                                <Text style={[styles.contactText, { color: theme.text }]}>{googleData.formatted_address}</Text>
+                            </View>
+                            {googleData.formatted_phone_number && (
+                                <View style={[styles.contactItem, { marginTop: 15 }]}>
+                                    <Phone size={20} color={theme.textSecondary} />
+                                    <Text style={[styles.contactText, { color: theme.text }]}>{googleData.formatted_phone_number}</Text>
+                                </View>
+                            )}
+
+                            <View style={styles.followRow}>
                                 <TouchableOpacity
                                     style={[
-                                        styles.reviewCard,
-                                        {
-                                            backgroundColor: theme.card,
-                                            borderColor: highlightedReviewId === rev.id ? theme.primary : theme.primary + '30',
-                                            borderWidth: highlightedReviewId === rev.id ? 2 : 1,
-                                            transform: [{ scale: highlightedReviewId === rev.id ? 1.02 : 1 }]
-                                        }
+                                        styles.followSectionBtn,
+                                        { backgroundColor: isFollowingEstablishment ? theme.card : theme.primary }
                                     ]}
-                                    onPress={() => router.push({
-                                        pathname: "/review/[id]",
-                                        params: {
-                                            id: rev.id || '',
-                                            userId: rev.userId,
-                                            user_name: rev.user_name,
-                                            user_avatar: rev.user_avatar,
-                                            comment: rev.comment,
-                                            rating_quality: rev.rating_quality,
-                                            rating_price: rev.rating_price,
-                                            rating_service: rev.rating_service,
-                                            rating_flavor: rev.rating_flavor,
-                                            images: rev.images?.join(','),
-                                            video: rev.video,
-                                            created_at: rev.created_at
-                                        }
-                                    })}
+                                    onPress={handleFollowToggle}
                                 >
-                                    <View style={styles.reviewHeader}>
-                                        <View style={styles.reviewUser}>
-                                            <Image source={{ uri: rev.user_avatar || getDefaultAvatarUrl(rev.user_name || 'User') }} style={styles.avatar} />
-                                            <View>
-                                                <Text style={[styles.userName, { color: theme.text }]}>{rev.user_name}</Text>
-                                                <View style={styles.topTopBadge}>
-                                                    <ShieldCheck size={12} color={theme.primary} />
-                                                    <Text style={[styles.topTopBadgeText, { color: theme.primary }]}>TopTop Member</Text>
+                                    <Heart
+                                        size={18}
+                                        color={isFollowingEstablishment ? theme.primary : '#1C1F26'}
+                                        fill={isFollowingEstablishment ? theme.primary : 'transparent'}
+                                        style={{ marginRight: 8 }}
+                                    />
+                                    <Text style={[
+                                        styles.followSectionBtnText,
+                                        { color: isFollowingEstablishment ? theme.text : '#1C1F26' }
+                                    ]}>
+                                        {isFollowingEstablishment ? 'Following' : 'Follow'}
+                                    </Text>
+                                </TouchableOpacity>
+
+                                {/* Follower Counter */}
+                                <View style={styles.followerBadge}>
+                                    <Users size={14} color={theme.textSecondary} />
+                                    <Text style={styles.followerCount}>
+                                        {followerCount} {followerCount === 1 ? 'follower' : 'followers'}
+                                    </Text>
+                                </View>
+
+                                {!isFollowingEstablishment && (
+                                    <Animated.View style={[styles.swipeHintInline, horizontalIndicatorStyle]}>
+                                        <Text style={[styles.swipeHintText, { color: theme.primary }]}>Slide to see news »</Text>
+                                    </Animated.View>
+                                )}
+                            </View>
+                            {priceInfo && (
+                                <View style={[styles.contactItem, { marginTop: 15 }]}>
+                                    <Wallet size={20} color={theme.primary} />
+                                    <View style={styles.priceDetailRow}>
+                                        <Text style={[styles.priceDetailSymbol, { color: theme.primary }]}>{priceInfo.symbol}</Text>
+                                        {priceInfo.range ? (
+                                            <Text style={[styles.priceDetailRange, { color: theme.text }]}>{priceInfo.range}</Text>
+                                        ) : null}
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 24, marginBottom: 16 }]}>Reviews</Text>
+                            </View>
+
+                            {/* TopTop Internal Reviews (Priority) */}
+                            {internalReviews.map((rev, i) => (
+                                <Animated.View
+                                    entering={ZoomIn.duration(400).delay(i * 100)}
+                                    key={rev.id || i.toString()}
+                                    onLayout={(e) => {
+                                        const y = e.nativeEvent.layout.y;
+                                        // Store position relative to content container
+                                        // Add hero height (400) + actionRow + contact info approx
+                                        // But better: onLayout gives relative to parent. Parent is 'content' View.
+                                        // So we need to add the offset of 'content' View within ScrollView.
+                                        // Simplest: store relative to parent and we'll calculate final Y.
+                                        if (rev.id) reviewPositions.current[rev.id] = y + 450; // Approximated offset
+                                    }}
+                                >
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.reviewCard,
+                                            {
+                                                backgroundColor: theme.card,
+                                                borderColor: highlightedReviewId === rev.id ? theme.primary : theme.primary + '30',
+                                                borderWidth: highlightedReviewId === rev.id ? 2 : 1,
+                                                transform: [{ scale: highlightedReviewId === rev.id ? 1.02 : 1 }]
+                                            }
+                                        ]}
+                                        onPress={() => router.push({
+                                            pathname: "/review/[id]",
+                                            params: {
+                                                id: rev.id || '',
+                                                userId: rev.userId,
+                                                user_name: rev.user_name,
+                                                user_avatar: rev.user_avatar,
+                                                comment: rev.comment,
+                                                rating_quality: rev.rating_quality,
+                                                rating_price: rev.rating_price,
+                                                rating_service: rev.rating_service,
+                                                rating_flavor: rev.rating_flavor,
+                                                images: rev.images?.join(','),
+                                                video: rev.video,
+                                                created_at: rev.created_at
+                                            }
+                                        })}
+                                    >
+                                        <View style={styles.reviewHeader}>
+                                            <TouchableOpacity
+                                                style={styles.reviewUser}
+                                                onPress={() => {
+                                                    if (rev.userId) {
+                                                    setGlobalLoading(true, 'Loading Top Profile...');
+                                                    router.push({ pathname: "/user/[id]", params: { id: rev.userId } });
+                                                    }
+                                                }}
+                                            >
+                                                <Image source={{ uri: rev.user_avatar || getDefaultAvatarUrl(rev.user_name || 'User') }} style={styles.avatar} />
+                                                <View>
+                                                    <Text style={[styles.userName, { color: theme.text }]}>{rev.user_name}</Text>
+                                                    <View style={styles.topTopBadge}>
+                                                        <ShieldCheck size={12} color={theme.primary} />
+                                                        <Text style={[styles.topTopBadgeText, { color: theme.primary }]}>TopTop Member</Text>
+                                                    </View>
                                                 </View>
+                                            </TouchableOpacity>
+                                            <View style={[styles.reviewScore, { backgroundColor: theme.primary }]}>
+                                                <Text style={styles.reviewScoreText}>{((rev.rating_quality + rev.rating_price + rev.rating_service + rev.rating_flavor) / 4).toFixed(1)}</Text>
                                             </View>
                                         </View>
-                                        <View style={[styles.reviewScore, { backgroundColor: theme.primary }]}>
-                                            <Text style={styles.reviewScoreText}>{((rev.rating_quality + rev.rating_price + rev.rating_service + rev.rating_flavor) / 4).toFixed(1)}</Text>
+                                        <CommentText
+                                            text={rev.comment || ''}
+                                            style={[styles.reviewComment, { color: theme.text }]}
+                                            numberOfLines={3}
+                                            ellipsizeMode="tail"
+                                        />
+                                    </TouchableOpacity>
+                                </Animated.View>
+                            ))}
+
+                            {/* Google Reviews */}
+                            {googleData.reviews?.map((rev, i) => (
+                                <View key={i} style={[styles.reviewCard, { backgroundColor: theme.backgroundSecondary, borderColor: theme.card, shadowOpacity: 0.05 }]}>
+                                    <View style={styles.reviewHeader}>
+                                        <View style={styles.reviewUser}>
+                                            <Image source={{ uri: rev.profile_photo_url }} style={styles.avatar} />
+                                            <View>
+                                                <Text style={[styles.userName, { color: theme.text }]}>{rev.author_name}</Text>
+                                                <Text style={[styles.reviewDate, { color: theme.textSecondary }]}>{rev.relative_time_description}</Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.googleRating}>
+                                            <Star size={14} color="#FBBC04" fill="#FBBC04" />
+                                            <Text style={[styles.googleRatingText, { color: theme.text }]}>{rev.rating}</Text>
                                         </View>
                                     </View>
-                                    <CommentText
-                                        text={rev.comment || ''}
-                                        style={[styles.reviewComment, { color: theme.text }]}
-                                        numberOfLines={3}
-                                        ellipsizeMode="tail"
+                                    <ExpandableReviewText
+                                        text={rev.text}
+                                        style={[styles.reviewComment, { color: theme.textSecondary }]}
+                                        theme={theme}
                                     />
-                                </TouchableOpacity>
-                            </Animated.View>
-                        ))}
+                                    <View style={styles.sourceTag}>
+                                        <Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png' }} style={styles.sourceLogo} />
+                                        <Text style={styles.sourceText}>Google Review</Text>
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
 
-                        {/* Google Reviews */}
-                        {googleData.reviews?.map((rev, i) => (
-                            <View key={i} style={[styles.reviewCard, { backgroundColor: theme.backgroundSecondary, borderColor: theme.card, shadowOpacity: 0.05 }]}>
-                                <View style={styles.reviewHeader}>
-                                    <View style={styles.reviewUser}>
-                                        <Image source={{ uri: rev.profile_photo_url }} style={styles.avatar} />
-                                        <View>
-                                            <Text style={[styles.userName, { color: theme.text }]}>{rev.author_name}</Text>
-                                            <Text style={[styles.reviewDate, { color: theme.textSecondary }]}>{rev.relative_time_description}</Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.googleRating}>
-                                        <Star size={14} color="#FBBC04" fill="#FBBC04" />
-                                        <Text style={[styles.googleRatingText, { color: theme.text }]}>{rev.rating}</Text>
-                                    </View>
-                                </View>
-                                <ExpandableReviewText
-                                    text={rev.text}
-                                    style={[styles.reviewComment, { color: theme.textSecondary }]}
-                                    theme={theme}
-                                />
-                                <View style={styles.sourceTag}>
-                                    <Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png' }} style={styles.sourceLogo} />
-                                    <Text style={styles.sourceText}>Google Review</Text>
-                                </View>
-                            </View>
-                        ))}
                     </View>
-
-                </View>
-            </Animated.ScrollView >
+                </Animated.ScrollView >
 
             </View>
 
             {/* TAB 2: ANNOUNCEMENTS */}
             <View style={{ width, flex: 1 }}>
-                <AnnouncementBoard 
-                    establishmentId={id as string} 
+                <AnnouncementBoard
+                    establishmentId={id as string}
                     isFollowing={isFollowingEstablishment}
                     onFollowPress={handleFollowToggle}
                 />
@@ -750,8 +755,8 @@ export default function EstablishmentDetailScreen() {
             {/* Hidden Social Share Card */}
             <View style={{ position: 'absolute', top: -3000, left: 0, opacity: 0 }} pointerEvents="none">
                 <View ref={socialCardRef} collapsable={false}>
-                    <SocialShareCard 
-                        type="establishment" 
+                    <SocialShareCard
+                        type="establishment"
                         theme={theme}
                         data={{
                             name: googleData?.name,

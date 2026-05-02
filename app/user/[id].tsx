@@ -103,6 +103,7 @@ export default function UserProfileScreen() {
                 await new Promise(resolve => setTimeout(resolve, 1000 - duration));
             }
             setLoading(false);
+            setGlobalLoading(false);
         }
     };
 
@@ -146,11 +147,8 @@ export default function UserProfileScreen() {
 
     if (loading) {
         return (
-            <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
-                <ActivityIndicator size="large" color={theme.primary} />
-                <Text style={{ marginTop: 20, color: theme.textSecondary, fontSize: 16, fontWeight: '600' }}>
-                    Loading legacy...
-                </Text>
+            <View style={[styles.container, { backgroundColor: theme.background }]}>
+                <Stack.Screen options={{ headerShown: false }} />
             </View>
         );
     }

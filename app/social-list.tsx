@@ -154,7 +154,10 @@ export default function SocialListScreen() {
         return (
             <TouchableOpacity
                 style={[styles.userCard, { backgroundColor: theme.card }]}
-                onPress={() => router.push(`/user/${item.uid}`)}
+                onPress={() => {
+                    setGlobalLoading(true, 'Loading Top Profile...');
+                    router.push({ pathname: "/user/[id]", params: { id: item.uid } });
+                }}
             >
                 <Image
                     source={{ uri: item.photoURL || getDefaultAvatarUrl(item.displayName || item.username || 'User') }}
