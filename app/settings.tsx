@@ -9,7 +9,7 @@ import { registerForPushNotificationsAsync } from '@/services/notificationServic
 import { updateUserProfile } from '@/services/userProfileService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useRouter } from 'expo-router';
-import { ArrowLeft, Beef, Bell, Fingerprint, Globe, Lock, LogOut, MapPin, Moon, ShieldCheck, Star, Sun, Trash2, UserPlus, Users, X } from 'lucide-react-native';
+import { ArrowLeft, Beef, Bell, Briefcase, Fingerprint, Globe, Lock, LogOut, MapPin, Moon, ShieldCheck, Star, Sun, Trash2, UserPlus, Users, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Image, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,7 +21,7 @@ export default function SettingsScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'dark'];
-    const { user } = useAuth();
+    const { user, role, appMode, setAppMode } = useAuth();
     const { showToast, showAlert, setGlobalLoading } = useGlobalUI();
 
     // Use the Settings Context
@@ -200,6 +200,19 @@ export default function SettingsScreen() {
                 }
             ]
         });
+    };
+
+    const toggleAppMode = () => {
+        const newMode = appMode === 'user' ? 'business' : 'user';
+        setAppMode(newMode);
+        showToast(`Switched to ${newMode === 'business' ? 'Business' : 'User'} Mode`, 'success');
+        
+        // Redirect
+        if (newMode === 'business') {
+            router.replace('/business/dashboard');
+        } else {
+            router.replace('/(tabs)');
+        }
     };
 
     const handlePrivacyPolicy = () => {
@@ -582,6 +595,21 @@ export default function SettingsScreen() {
                         <SettingItem icon={ShieldCheck} title="Privacy Policy" onPress={handlePrivacyPolicy} />
                     </View>
                 </View>
+
+                {role === 'business' && (
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionLabel, { color: theme.primary }]}>BUSINESS MANAGEMENT</Text>
+                        <View style={[styles.card, { backgroundColor: theme.card }]}>
+                            <SettingItem
+                                icon={Briefcase}
+                                title="Business Mode"
+                                isSwitch
+                                switchValue={appMode === 'business'}
+                                onSwitch={toggleAppMode}
+                            />
+                        </View>
+                    </View>
+                )}
 
                 <View style={styles.section}>
                     <Text style={[styles.sectionLabel, { color: theme.error }]}>DANGER</Text>

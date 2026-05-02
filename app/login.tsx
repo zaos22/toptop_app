@@ -438,6 +438,23 @@ export default function LoginScreen() {
                             </TouchableOpacity>
                         </View>
 
+                        <View style={styles.businessSection}>
+                            <View style={[styles.businessCard, { backgroundColor: theme.primary + '15', borderColor: theme.primary + '30' }]}>
+                                <View style={styles.businessContent}>
+                                    <Text style={[styles.businessTitle, { color: theme.text }]}>¿Eres una empresa?</Text>
+                                    <Text style={[styles.businessSubtitle, { color: theme.textSecondary }]}>
+                                        Gestiona tu local, responde a reseñas y consulta tus analíticas.
+                                    </Text>
+                                </View>
+                                <TouchableOpacity 
+                                    style={[styles.businessBtn, { backgroundColor: theme.primary }]}
+                                    onPress={() => router.push('/business-landing')}
+                                >
+                                    <Text style={styles.businessBtnText}>Acceso Manager</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
                         <View style={styles.footer}>
                             <Text style={[styles.footerText, { color: theme.textSecondary }]}>Don't have an account? </Text>
                             <TouchableOpacity onPress={() => router.push('/signup')}>
@@ -518,5 +535,44 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         letterSpacing: 0.3,
+    },
+    businessSection: {
+        marginTop: 10,
+        marginBottom: 20,
+    },
+    businessCard: {
+        padding: 20,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 15,
+    },
+    businessContent: {
+        flex: 1,
+    },
+    businessTitle: {
+        fontSize: 17,
+        fontWeight: '800',
+        marginBottom: 4,
+    },
+    businessSubtitle: {
+        fontSize: 13,
+        fontWeight: '500',
+        lineHeight: 18,
+    },
+    businessBtn: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    businessBtnText: {
+        color: '#1C1F26',
+        fontSize: 14,
+        fontWeight: '800',
     },
 });

@@ -15,6 +15,7 @@ export interface UserProfile {
     followingCount: number;
     badges: string[];
     isHalal: boolean;
+    role: 'user' | 'business';
     createdAt: string;
     updatedAt: string;
 }
@@ -27,7 +28,8 @@ export const createUserProfile = async (
     email: string,
     displayName: string,
     photoURL: string | null = null,
-    username: string | null = null
+    username: string | null = null,
+    role: 'user' | 'business' = 'user'
 ): Promise<void> => {
     try {
         const { error } = await supabase.from('profiles').insert({
@@ -39,6 +41,7 @@ export const createUserProfile = async (
             bio: null,
             points: 0,
             is_halal: false,
+            role: role,
         });
 
         if (error) throw error;
@@ -84,6 +87,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
             followingCount: data.following_count || 0,
             badges: data.badges || [],
             isHalal: data.is_halal || false,
+            role: data.role || 'user',
             createdAt: data.created_at,
             updatedAt: data.updated_at,
         };
@@ -109,6 +113,7 @@ export const updateUserProfile = async (
         if (updates.points !== undefined) supabaseUpdates.points = updates.points;
         if (updates.badges !== undefined) supabaseUpdates.badges = updates.badges;
         if (updates.isHalal !== undefined) supabaseUpdates.is_halal = updates.isHalal;
+        if (updates.role !== undefined) supabaseUpdates.role = updates.role;
 
         const { error } = await supabase
             .from('profiles')

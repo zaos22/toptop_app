@@ -77,7 +77,7 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { user, loading, needsUsername } = useAuth();
+  const { user, loading, needsUsername, role, appMode } = useAuth();
   const { notificationsEnabled } = useSettings();
   const { isLoading: isGlobalLoading, showToast, setGlobalLoading } = useGlobalUI();
   const segments = useSegments();
@@ -201,7 +201,8 @@ function RootLayoutNav() {
                         segments[0] === 'settings' || 
                         segments[0] === 'edit-profile' || 
                         segments[0] === 'notifications' ||
-                        segments[0] === 'social-list';
+                        segments[0] === 'social-list' ||
+                        segments[0] === 'business';
 
     if (!user && inAuthGroup) {
       // Redirect to login if NOT authenticated and trying to access app
@@ -210,10 +211,21 @@ function RootLayoutNav() {
       // SI TIENE SESIÓN PERO NECESITA USERNAME (Google signup)
       router.replace('/edit-profile');
     } else if (user && !needsUsername && (segments[0] === 'login' || segments[0] === 'signup' || segments[0] === undefined)) {
-      // Redirect to home if authenticated and trying to access auth screens
-      router.replace('/(tabs)');
+      // Redirect to appropriate home based on appMode
+      if (appMode === 'business') {
+        router.replace('/business/dashboard');
+      } else {
+        router.replace('/(tabs)');
+      }
+    } else if (user && !needsUsername) {
+      // ENFORCE MODE
+      if (appMode === 'business' && segments[0] === '(tabs)') {
+        router.replace('/business/dashboard');
+      } else if (appMode === 'user' && segments[0] === 'business') {
+        router.replace('/(tabs)');
+      }
     }
-  }, [user, loading, segments, needsUsername]);
+  }, [user, loading, segments, needsUsername, role, appMode]);
 
   const customTheme = {
     ...(colorScheme?.includes('dark') ? DarkTheme : DefaultTheme),
@@ -233,6 +245,9 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="signup" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="business-landing" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="business-request" options={{ headerShown: false }} />
+        <Stack.Screen name="business" options={{ headerShown: false }} />
         <Stack.Screen name="establishment/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="review/add" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>

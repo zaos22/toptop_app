@@ -15,6 +15,9 @@ interface AuthContextType {
     session: Session | null;
     loading: boolean;
     needsUsername: boolean;
+    role: 'user' | 'business';
+    appMode: 'user' | 'business';
+    setAppMode: (mode: 'user' | 'business') => void;
     setNeedsUsername: (val: boolean) => void;
 }
 
@@ -23,6 +26,9 @@ const AuthContext = createContext<AuthContextType>({
     session: null,
     loading: true,
     needsUsername: false,
+    role: 'user',
+    appMode: 'user',
+    setAppMode: () => {},
     setNeedsUsername: () => {},
 });
 
@@ -31,6 +37,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [needsUsername, setNeedsUsername] = useState(false);
+    const [role, setRole] = useState<'user' | 'business'>('user');
+    const [appMode, setAppMode] = useState<'user' | 'business'>('user');
     const lastCheckedUserId = useRef<string | null>(null);
 
     // 1. Manejo de URLs (Deep Links)
@@ -102,7 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             try {
                 const { data: profile, error } = await supabase
                     .from('profiles')
-                    .select('id, username')
+                    .select('id, username, role')
                     .eq('id', u.id)
                     .maybeSingle();
 
@@ -122,9 +130,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         username: metaUsername,
                         points: 0, 
                         visited_count: 0, 
-                        reviews_count: 0
+                        reviews_count: 0,
+                        role: 'user'
                     });
-
+                    setRole('user');
                     setNeedsUsername(!metaUsername); 
                 } else if (!profile.username) {
                     // Profile exists but has no username (e.g. created by trigger without metadata sync)
@@ -143,6 +152,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     }
                 } else {
                     setNeedsUsername(false);
+                }
+                
+                if (profile?.role) {
+                    setRole(profile.role);
+                    // Initial app mode matches role
+                    if (lastCheckedUserId.current !== u.id) {
+                        setAppMode(profile.role);
+                    }
+                } else {
+                    setRole('user');
+                    setAppMode('user');
                 }
 
                 lastCheckedUserId.current = u.id;
@@ -163,7 +183,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [user?.id]);
 
     return (
-        <AuthContext.Provider value={{ user, session, loading, needsUsername, setNeedsUsername }}>
+        <AuthContext.Provider value={{ user, session, loading, needsUsername, role, appMode, setAppMode, setNeedsUsername }}>
             {children}
         </AuthContext.Provider>
     );
