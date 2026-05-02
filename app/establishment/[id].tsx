@@ -11,16 +11,19 @@ import { followUser, isFollowing, unfollowUser } from '@/services/userProfileSer
 import { getCategoryFromTypes } from '@/utils/categoryUtils';
 import { getPriceInfo } from '@/utils/priceUtils';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, Globe, Heart, List, ListPlus, LogIn, MapPin, Phone, Share2 as ShareIcon, ShieldCheck, Star, Trash2, Wallet, X, Share2 } from 'lucide-react-native';
+import { ChevronLeft, Globe, Heart, List, ListPlus, LogIn, MapPin, Phone, Share2 as ShareIcon, ShieldCheck, Star, Trash2, Wallet, X, Users } from 'lucide-react-native';
 import React, { useEffect, useState, useRef } from 'react';
 import { ActivityIndicator, Alert, Dimensions, FlatList, Image, Linking, Modal, Share, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 import { ShareService } from '@/services/shareService';
 import { SocialShareCard } from '@/components/SocialShareCard';
 import { getDefaultAvatarUrl } from '@/utils/userUtils';
-import Animated, { Easing, Extrapolate, interpolate, runOnJS, useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming, ZoomIn } from 'react-native-reanimated';
+import Animated, { Easing, Extrapolate, interpolate, runOnJS, useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSpring, withTiming, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '@/context/SettingsContext';
+import { AnnouncementBoard } from '@/components/AnnouncementBoard';
+import { establishmentFollowService } from '@/services/establishmentFollowService';
+import { supabase } from '@/config/supabase';
 
 const { width } = Dimensions.get('window');
 
@@ -43,6 +46,15 @@ export default function EstablishmentDetailScreen() {
     const scrollViewRef = React.useRef<Animated.ScrollView>(null);
     const reviewPositions = React.useRef<Record<string, number>>({});
     const [highlightedReviewId, setHighlightedReviewId] = useState<string | null>(null);
+    const [isFollowingEstablishment, setIsFollowingEstablishment] = useState(false);
+    const [followerCount, setFollowerCount] = useState(0);
+    const pagerRef = useRef<Animated.ScrollView>(null);
+    const horizontalScrollX = useSharedValue(0);
+    const hintVisible = useSharedValue(1);
+
+    const onHorizontalScroll = useAnimatedScrollHandler((event) => {
+        horizontalScrollX.value = event.contentOffset.x;
+    });
 
     // Create List Modal State
     const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
@@ -85,6 +97,15 @@ export default function EstablishmentDetailScreen() {
         };
     });
 
+    const horizontalIndicatorStyle = useAnimatedStyle(() => {
+        const scrollOpacity = interpolate(horizontalScrollX.value, [0, width / 2, width], [1, 0.5, 0]);
+        return { opacity: scrollOpacity * hintVisible.value };
+    });
+
+    useEffect(() => {
+        hintVisible.value = withDelay(3000, withTiming(0, { duration: 800 }));
+    }, []);
+
     // Sync React state with SharedValue for non-style props to avoid render warnings
     const [showFloatingButton, setShowFloatingButton] = useState(false);
     useAnimatedReaction(
@@ -106,10 +127,12 @@ export default function EstablishmentDetailScreen() {
         setLoading(true);
         const startTime = Date.now();
         try {
-            const [gData, iReviews, favorited] = await Promise.all([
+            const [gData, iReviews, favorited, followStatus, count] = await Promise.all([
                 getGooglePlaceDetails(placeId),
                 getInternalReviews(placeId, halalEnabled),
-                user ? isEstablishmentFavorited(user.id, placeId) : Promise.resolve(false)
+                user ? isEstablishmentFavorited(user.id, placeId) : Promise.resolve(false),
+                user ? establishmentFollowService.checkFollowStatus(user.id, placeId) : Promise.resolve(false),
+                establishmentFollowService.getFollowerCount(placeId)
             ]);
 
             const elapsed = Date.now() - startTime;
@@ -118,6 +141,8 @@ export default function EstablishmentDetailScreen() {
             setGoogleData(gData);
             setInternalReviews(iReviews);
             setIsLiked(favorited);
+            setIsFollowingEstablishment(followStatus);
+            setFollowerCount(count);
 
             // Scroll to specific review if requested
             if (targetReviewId) {
@@ -271,6 +296,60 @@ export default function EstablishmentDetailScreen() {
         }
     };
 
+    const checkFollowStatus = async (userId: string, placeId: string) => {
+        return establishmentFollowService.checkFollowStatus(userId, placeId);
+    };
+
+    const handleFollowToggle = async () => {
+        if (!user) {
+            showAlert({
+                title: 'Log In',
+                message: 'Follow establishments to get their latest updates and participate in the community.',
+                options: [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Log In', style: 'primary', onPress: () => router.push('/login') }
+                ]
+            });
+            return;
+        }
+
+        const placeId = Array.isArray(id) ? id[0] : id;
+        const previousStatus = isFollowingEstablishment;
+        
+        // Optimistic UI update
+        setIsFollowingEstablishment(!previousStatus);
+        setFollowerCount(prev => previousStatus ? Math.max(0, prev - 1) : prev + 1);
+
+        try {
+            let success = false;
+            if (previousStatus) {
+                success = await establishmentFollowService.unfollowEstablishment(user.id, placeId);
+                if (success) showToast('Unfollowed', 'info');
+            } else {
+                success = await establishmentFollowService.followEstablishment(user.id, placeId, googleData?.name);
+                if (success) showToast('Following!', 'success');
+            }
+
+            if (!success) {
+                // Revert if service call failed
+                setIsFollowingEstablishment(previousStatus);
+                // Fetch fresh count to be sure
+                const freshCount = await establishmentFollowService.getFollowerCount(placeId);
+                setFollowerCount(freshCount);
+                showToast('Error updating follow status', 'error');
+            } else {
+                // Fetch fresh count even on success to sync with server
+                const freshCount = await establishmentFollowService.getFollowerCount(placeId);
+                setFollowerCount(freshCount);
+            }
+        } catch (error) {
+            setIsFollowingEstablishment(previousStatus);
+            const freshCount = await establishmentFollowService.getFollowerCount(placeId);
+            setFollowerCount(freshCount);
+            showToast('Error updating follow status', 'error');
+        }
+    };
+
     if (loading) {
         return (
             <View style={[styles.centered, { backgroundColor: theme.background }]}>
@@ -291,14 +370,23 @@ export default function EstablishmentDetailScreen() {
         );
     }
 
+    const priceInfo = getPriceInfo(googleData.price_level, googleData.types);
     const heroImage = googleData.photos && googleData.photos.length > 0
         ? getPhotoUrl(googleData.photos[0].photo_reference)
         : 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=800&q=80';
 
-    const priceInfo = getPriceInfo(googleData.price_level, googleData.types);
-
     return (
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Animated.ScrollView
+            ref={pagerRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={onHorizontalScroll}
+            scrollEventThrottle={16}
+            style={styles.container}
+        >
+            {/* TAB 1: DETAILS */}
+            <View style={{ width, flex: 1 }}>
             {/* Floating Review Button (Appears on scroll) */}
             <Animated.View style={floatingButtonStyle} pointerEvents={showFloatingButton ? 'auto' : 'none'}>
                 <TouchableOpacity
@@ -315,6 +403,7 @@ export default function EstablishmentDetailScreen() {
                     <Text style={styles.floatingAddBtnText}>Write review</Text>
                 </TouchableOpacity>
             </Animated.View>
+
 
             {/* Fixed Header Overlay */}
             <View style={[styles.headerActions, { paddingTop: insets.top + 10 }]} pointerEvents="box-none">
@@ -387,6 +476,7 @@ export default function EstablishmentDetailScreen() {
                                 </View>
                             </View>
 
+
                             {/* Pagination Dots - Moved inside for better touch area */}
                             {googleData.photos && googleData.photos.length > 1 && (
                                 <View style={styles.compactPagination}>
@@ -440,6 +530,43 @@ export default function EstablishmentDetailScreen() {
                                 <Text style={[styles.contactText, { color: theme.text }]}>{googleData.formatted_phone_number}</Text>
                             </View>
                         )}
+
+                        <View style={styles.followRow}>
+                            <TouchableOpacity 
+                                style={[
+                                    styles.followSectionBtn, 
+                                    { backgroundColor: isFollowingEstablishment ? theme.card : theme.primary }
+                                ]}
+                                onPress={handleFollowToggle}
+                            >
+                                <Heart 
+                                    size={18} 
+                                    color={isFollowingEstablishment ? theme.primary : '#1C1F26'} 
+                                    fill={isFollowingEstablishment ? theme.primary : 'transparent'} 
+                                    style={{ marginRight: 8 }}
+                                />
+                                <Text style={[
+                                    styles.followSectionBtnText, 
+                                    { color: isFollowingEstablishment ? theme.text : '#1C1F26' }
+                                ]}>
+                                    {isFollowingEstablishment ? 'Following' : 'Follow'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* Follower Counter */}
+                            <View style={styles.followerBadge}>
+                                <Users size={14} color={theme.textSecondary} />
+                                <Text style={styles.followerCount}>
+                                    {followerCount} {followerCount === 1 ? 'follower' : 'followers'}
+                                </Text>
+                            </View>
+
+                            {!isFollowingEstablishment && (
+                                <Animated.View style={[styles.swipeHintInline, horizontalIndicatorStyle]}>
+                                    <Text style={[styles.swipeHintText, { color: theme.primary }]}>Slide to see news »</Text>
+                                </Animated.View>
+                            )}
+                        </View>
                         {priceInfo && (
                             <View style={[styles.contactItem, { marginTop: 15 }]}>
                                 <Wallet size={20} color={theme.primary} />
@@ -558,6 +685,17 @@ export default function EstablishmentDetailScreen() {
                 </View>
             </Animated.ScrollView >
 
+            </View>
+
+            {/* TAB 2: ANNOUNCEMENTS */}
+            <View style={{ width, flex: 1 }}>
+                <AnnouncementBoard 
+                    establishmentId={id as string} 
+                    isFollowing={isFollowingEstablishment}
+                    onFollowPress={handleFollowToggle}
+                />
+            </View>
+
             {/* Creation Modal */}
             <Modal
                 visible={isCreateModalVisible}
@@ -625,7 +763,7 @@ export default function EstablishmentDetailScreen() {
                     />
                 </View>
             </View>
-        </View >
+        </Animated.ScrollView >
     );
 }
 
@@ -946,4 +1084,64 @@ const styles = StyleSheet.create({
     priceDetailRow: { flexDirection: 'row', alignItems: 'center', marginLeft: 12, gap: 6 },
     priceDetailSymbol: { fontSize: 15, fontWeight: '900' },
     priceDetailRange: { fontSize: 14, fontWeight: '600' },
+    swipeIndicator: {
+        position: 'absolute',
+        bottom: 120,
+        right: 20,
+        backgroundColor: 'rgba(28, 31, 38, 0.7)',
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        borderRadius: 20,
+        zIndex: 5,
+    },
+    swipeIndicatorText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    followRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginTop: 20,
+    },
+    followSectionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
+        alignSelf: 'flex-start',
+    },
+    followSectionBtnText: {
+        fontSize: 13,
+        fontWeight: '800',
+    },
+    swipeHintInline: {
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    swipeHintText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#FFD700',
+    },
+    followerBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 20,
+        gap: 6,
+    },
+    followerCount: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#999',
+    },
 });

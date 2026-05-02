@@ -4,7 +4,7 @@ import { getPriceInfo } from '@/utils/priceUtils';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, Heart } from 'lucide-react-native';
 
 interface RankingBlockProps {
     subcategory: any;
@@ -12,13 +12,16 @@ interface RankingBlockProps {
     locationName: string;
     data: any[];
     loading: boolean;
+    followedPlaceIds?: string[];
+    onFollowToggle?: (item: any) => void;
 }
 
-export default function RankingBlock({ subcategory, userLocation, locationName, data, loading }: RankingBlockProps) {
+export default function RankingBlock({ subcategory, userLocation, locationName, data, loading, followedPlaceIds = [], onFollowToggle }: RankingBlockProps) {
     const router = useRouter();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'dark'];
     const rankColors = ['#FFD700', '#C0C0C0', '#CD7132'];
+    const isFollowed = (placeId: string) => followedPlaceIds.includes(placeId);
 
     if (loading && (!data || data.length === 0)) {
         return (
@@ -109,6 +112,20 @@ export default function RankingBlock({ subcategory, userLocation, locationName, 
                                     </Text>
                                 </View>
                             </View>
+
+                            <TouchableOpacity 
+                                style={[
+                                    styles.followBtn, 
+                                    { backgroundColor: isFollowed(item.id) ? theme.primary + '20' : theme.card }
+                                ]}
+                                onPress={() => onFollowToggle && onFollowToggle(item)}
+                            >
+                                <Heart 
+                                    size={18} 
+                                    color={isFollowed(item.id) ? theme.error : theme.textSecondary} 
+                                    fill={isFollowed(item.id) ? theme.error : 'transparent'} 
+                                />
+                            </TouchableOpacity>
 
                         </TouchableOpacity>
                     );
@@ -202,5 +219,13 @@ const styles = StyleSheet.create({
     reviewsText: {
         fontSize: 11,
         fontWeight: '500',
+    },
+    followBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 10,
     }
 });

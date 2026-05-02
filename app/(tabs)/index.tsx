@@ -11,12 +11,15 @@ import { getCategoryFromTypes, isCompatibleWithRanking } from '@/utils/categoryU
 import { getPriceInfo } from '@/utils/priceUtils';
 import { CATEGORY_DEFINITIONS, formatPlaces } from '@/utils/rankingDefinitions';
 import { getDefaultAvatarUrl } from '@/utils/userUtils';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { Bell, MapPin, Search, Star, X } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '@/context/AuthContext';
+import { establishmentFollowService } from '@/services/establishmentFollowService';
+import { Heart } from 'lucide-react-native';
 
 
 
@@ -38,6 +41,8 @@ export default function TopScreen() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [rankingsData, setRankingsData] = useState<Record<string, any[]>>({});
   const [rankingsLoading, setRankingsLoading] = useState(false);
+  const { user } = useAuth();
+  const [followedPlaceIds, setFollowedPlaceIds] = useState<string[]>([]);
 
   // Search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -125,6 +130,46 @@ export default function TopScreen() {
       setLoading(false);
     }
   }, []);
+
+  const fetchFollows = async () => {
+    if (!user) {
+      setFollowedPlaceIds([]);
+      return;
+    }
+    const followedIds = await establishmentFollowService.getFollowedPlaceIds(user.id);
+    setFollowedPlaceIds(followedIds);
+  };
+
+  useEffect(() => {
+    fetchFollows();
+  }, [user]);
+
+  const handleFollowToggle = async (item: any) => {
+    if (!user) {
+      Alert.alert(
+        'Log In',
+        'You must log in to follow establishments and see their latest news.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Log In', onPress: () => router.push('/login') }
+        ]
+      );
+      return;
+    }
+
+    const isFollowing = followedPlaceIds.includes(item.id);
+    const newFollows = isFollowing 
+      ? followedPlaceIds.filter(id => id !== item.id)
+      : [...followedPlaceIds, item.id];
+    
+    setFollowedPlaceIds(newFollows);
+
+    if (isFollowing) {
+      await establishmentFollowService.unfollowEstablishment(user.id, item.id);
+    } else {
+      await establishmentFollowService.followEstablishment(user.id, item.id, item.name);
+    }
+  };
 
   // 2. Data Loading logic
   const loadData = async () => {
@@ -376,7 +421,9 @@ export default function TopScreen() {
     if (!userLocation) return;
 
     // OPTIMIZATION: Check if we moved enough to justify new API calls
-    if (lastFetchedLocation) {
+    const categoryChanged = prevCategoryRef.current !== activeCategory;
+    
+    if (lastFetchedLocation && !categoryChanged) {
       const distanceMoved = getDistance(
         lastFetchedLocation.lat,
         lastFetchedLocation.lng,
@@ -390,6 +437,8 @@ export default function TopScreen() {
         return;
       }
     }
+    
+    prevCategoryRef.current = activeCategory;
 
     const activeCat = CATEGORY_DEFINITIONS.find(c => c.id === activeCategory);
     if (!activeCat) return;
@@ -527,7 +576,14 @@ export default function TopScreen() {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [activeCategory, userLocation]);
+  }, [activeCategory, userLocation, halalEnabled]);
+
+  // Add focus effect to refresh follows
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchFollows();
+    }, [user])
+  );
 
   // 7. Renderings
   const renderGem = ({ item }: { item: Establishment }) => {
@@ -866,6 +922,8 @@ export default function TopScreen() {
                             locationName={locationName}
                             data={blockData}
                             loading={false}
+                            followedPlaceIds={followedPlaceIds}
+                            onFollowToggle={handleFollowToggle}
                           />
                         </Animated.View>
                       );
