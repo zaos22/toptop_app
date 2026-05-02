@@ -33,7 +33,8 @@ export default function ReviewDetailScreen() {
     const insets = useSafeAreaInsets();
     const commentInputRef = React.useRef<TextInput>(null);
     const scrollViewRef = React.useRef<ScrollView>(null);
-    const [commentRefs] = useState(() => new Map<string, View>());
+    const commentPositions = React.useRef<Map<string, number>>(new Map());
+    const [commentsSectionY, setCommentsSectionY] = useState(0);
 
     const [isEditing, setIsEditing] = useState(false);
     const [isLiking, setIsLiking] = useState(false);
@@ -103,28 +104,21 @@ export default function ReviewDetailScreen() {
             const loadedComments = await loadComments();
 
             // If we have a target commentId in params, scroll to it
-            if (params.commentId && loadedComments.length > 0) {
-                // Wait for layout to settle
-                setTimeout(() => {
-                    const targetComponent = commentRefs.get(params.commentId as string);
-                    const scrollNode = findNodeHandle(scrollViewRef.current);
-                    const targetNode = targetComponent ? findNodeHandle(targetComponent) : null;
-
-                    if (targetNode && scrollNode && targetComponent) {
-                        try {
-                            // @ts-ignore
-                            targetComponent.measureLayout(
-                                scrollNode,
-                                (x, y) => {
-                                    scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 100), animated: true });
-                                },
-                                () => console.warn('MeasureLayout failed to find relation')
-                            );
-                        } catch (e) {
-                            console.warn('Scroll attempt failed:', e);
-                        }
+            if (params.commentId) {
+                // Try multiple times as layout might take time to settle
+                let attempts = 0;
+                const scrollInterval = setInterval(() => {
+                    const targetY = commentPositions.current.get(params.commentId as string);
+                    if (targetY !== undefined && commentsSectionY > 0) {
+                        scrollViewRef.current?.scrollTo({ 
+                            y: Math.max(0, commentsSectionY + targetY - 100), 
+                            animated: true 
+                        });
+                        clearInterval(scrollInterval);
                     }
-                }, 1500);
+                    attempts++;
+                    if (attempts > 10) clearInterval(scrollInterval);
+                }, 300);
             }
         };
         init();
@@ -447,13 +441,7 @@ export default function ReviewDetailScreen() {
                     params.commentId === comment.id && { backgroundColor: 'rgba(214, 178, 94, 0.05)', borderRadius: 12, padding: 8, marginHorizontal: -8 }
                 ]}
                 onLayout={(event) => {
-                    // Optional: could store Y directly if measureLayout fails
-                }}
-                ref={(ref) => {
-                    if (ref) {
-                        // Store the native node reference
-                        commentRefs.set(comment.id, ref);
-                    }
+                    commentPositions.current.set(comment.id, event.nativeEvent.layout.y);
                 }}
             >
                 <TouchableOpacity 
@@ -816,7 +804,10 @@ export default function ReviewDetailScreen() {
                                 )}
                             </View>
 
-                            <View style={styles.commentsSection}>
+                            <View 
+                                style={styles.commentsSection}
+                                onLayout={(e) => setCommentsSectionY(e.nativeEvent.layout.y)}
+                            >
                                 <View style={styles.commentsHeader}>
                                     <MessageSquare size={20} color={theme.text} />
                                     <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0, marginLeft: 10 }]}>
