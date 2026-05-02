@@ -3,6 +3,7 @@ import GemCarousel from '@/components/GemCarousel';
 import RankingBlock from '@/components/RankingBlock';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
+import { useSettings } from '@/context/SettingsContext';
 import { Establishment } from '@/services/establishmentService';
 import { getGooglePlaceDetails, getPhotoUrl, getPlaceGeometry, searchLocations, searchNearbyPlaces, searchPlaces } from '@/services/googleMapsService';
 import { getUserProfile, searchUsers, UserProfile } from '@/services/userProfileService';
@@ -16,7 +17,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSettings } from '@/context/SettingsContext';
 
 
 
@@ -94,14 +94,14 @@ export default function TopScreen() {
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({ 
-        accuracy: Location.Accuracy.Balanced 
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced
       });
 
       if (location) {
         const lat = location.coords.latitude;
         const lng = location.coords.longitude;
-        
+
         // Only update everything if it's significantly different or we forced it
         if (forceUpdate || !savedLocation || Math.abs(savedLocation.lat - lat) > 0.005) {
           const address = await getCityCountryFromCoordinates(lat, lng);
@@ -357,14 +357,44 @@ export default function TopScreen() {
     initLocation(true);
   };
 
+  const [lastFetchedLocation, setLastFetchedLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Helper to calculate distance between two points in meters
+  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
   const fetchAllRankings = async () => {
     if (!userLocation) return;
+
+    // OPTIMIZATION: Check if we moved enough to justify new API calls
+    if (lastFetchedLocation) {
+      const distanceMoved = getDistance(
+        lastFetchedLocation.lat,
+        lastFetchedLocation.lng,
+        userLocation.lat,
+        userLocation.lng
+      );
+      // If moved less than 500 meters, don't re-fetch unless forced
+      if (distanceMoved < 500) {
+        console.log('Skipping API fetch: User moved only', Math.round(distanceMoved), 'm');
+        setRankingsLoading(false);
+        return;
+      }
+    }
 
     const activeCat = CATEGORY_DEFINITIONS.find(c => c.id === activeCategory);
     if (!activeCat) return;
 
-    // Minimum wait time to ensure the transition is smooth and flick-free
-    const minLoadingPromise = new Promise(resolve => setTimeout(resolve, 800));
+    const minLoadingPromise = new Promise(resolve => setTimeout(resolve, 600));
 
     try {
       const subcategories = activeCat.subcategories.filter(sub => {
@@ -373,119 +403,100 @@ export default function TopScreen() {
         const sQ = (sub.query || '').toLowerCase();
         const sT = sub.title.toLowerCase();
         return !(sId.includes('club') || sId.includes('nightlife') || sId.includes('bar') || sId.includes('pub') || sId.includes('cocktail') || sId.includes('karaoke') ||
-                 sQ.includes('nightclub') || sQ.includes('disco') || sQ.includes('bar') || sQ.includes('pub') ||
-                 sT.includes('clubs') || sT.includes('night') || sT.includes('bars') || sT.includes('drinks'));
+          sQ.includes('nightclub') || sQ.includes('disco') || sQ.includes('bar') || sQ.includes('pub') ||
+          sT.includes('clubs') || sT.includes('night') || sT.includes('bars') || sT.includes('drinks'));
       });
 
       const usedIdsSet = new Set<string>();
       const resultsMap: Record<string, any[]> = {};
       const isWorldMode = activeCat.id === 'global_top';
 
-      for (const sub of subcategories) {
-        let rawResults = [];
-        const isWorld = (sub as any).isWorld === true || isWorldMode;
-
-        if (sub.type && !sub.query) {
-          rawResults = await searchNearbyPlaces(
-            isWorld ? 0 : userLocation.lat, 
-            isWorld ? 0 : userLocation.lng, 
-            sub.type
-          );
-        } else if (sub.query) {
-          let q = isWorld ? sub.query : `${sub.query} in ${locationName}`;
-          
-          // Apply Halal Filter: Only for food related categories or specific queries
-          const isFoodRelated = activeCategory === 'food' || 
-                               sub.title.toLowerCase().includes('food') || 
-                               sub.title.toLowerCase().includes('gastro') ||
-                               sub.query.toLowerCase().includes('restaurant') ||
-                               sub.query.toLowerCase().includes('cafe');
-
-          if (halalEnabled && isFoodRelated) {
-            q = `${q} halal`;
-          }
-
-          rawResults = await searchPlaces(
-            q, 
-            isWorld ? undefined : userLocation.lat, 
-            isWorld ? undefined : userLocation.lng, 
-            sub.type
-          );
-        }
-
-        // Global Deduplication + Strict Category Filter
-        const filtered = rawResults.filter((item: any) => {
-          // 1. No duplicates allowed in the same screen
-          if (usedIdsSet.has(item.place_id)) return false;
-
-          // 2. Custom Category Verification
-          // We use our strict logic to see what THIS place actually is
-          const detectedCategory = getCategoryFromTypes(item.types, item.name);
-
-          // 3. GLOBAL Relevancy Filter (Centralized)
-          if (!isCompatibleWithRanking(detectedCategory, sub.title, sub.id)) {
-              return false;
-          }
-
-
-
-          // NIGHTLIFE filter: No "Restaurant" in Nightclubs/Bars
-          const nameLower = item.name.toLowerCase();
-          if (sub.id.includes('nightclub') || sub.id.includes('disco') || sub.id.includes('bar') || sub.type === 'night_club') {
-            const isLikelyRestaurant = nameLower.includes('restaurant') || nameLower.includes('kitchen') || nameLower.includes('grill') || nameLower.includes('steakhouse') || nameLower.includes('asador');
-            const isStrictlyDisco = nameLower.includes('disco') || nameLower.includes('club');
-            if (isLikelyRestaurant && !isStrictlyDisco) return false;
-          }
-
-          // Travel Agency filter: No Real Estate or Schools
-          if (sub.id === 'travel_agencies' || sub.type === 'travel_agency') {
-            const isRealEstate = nameLower.includes('real estate') || nameLower.includes('properties');
-            const isSchool = nameLower.includes('school') || nameLower.includes('academy');
-            if (isRealEstate || isSchool) return false;
-          }
-
-          // Home Category: Filter out generic "tienda de" if it's too broad
-          if (sub.id === 'real_estate') {
-            const isActuallyAgency = nameLower.includes('real estate') || item.types?.includes('real_estate_agency');
-            if (!isActuallyAgency) return false;
-          }
-
-          // 4. Halal Mode Strict Filtering (No bars, clubs, alcohol)
-          if (halalEnabled) {
-              const types = item.types || [];
-              const haramTypes = ['night_club', 'bar', 'liquor_store', 'distillery', 'winery'];
-              const hasHaramType = types.some((t: string) => haramTypes.includes(t));
-              
-              const sName = item.name.toLowerCase();
-              const hasHaramName = sName.includes('nightclub') || sName.includes('disco') || sName.includes('club') || sName.includes('bar') || sName.includes('drinks') || sName.includes('pub') || sName.includes('cocktail');
-              
-              if (hasHaramType || hasHaramName) return false;
-          }
-
-          return true;
-        });
-
-        const formatted = formatPlaces(filtered);
-
-        // REQUIREMENT: No rankings if fewer than 5 establishments exist
-        if (formatted.length < 5) {
-          resultsMap[sub.id] = [];
-          continue;
-        }
-
-        const sorted = formatted.sort((a, b) => {
-          if (b.score !== a.score) return b.score - a.score;
-          return (b.reviewCount || 0) - (a.reviewCount || 0);
-        }).slice(0, 3);
-
-        // Add to usedIds Set
-        sorted.forEach(item => usedIdsSet.add(item.id));
-        resultsMap[sub.id] = sorted;
+      // OPTIMIZATION: Run subcategory queries in batches or parallel to speed up UX
+      // We process them in chunks of 3 to avoid hitting browser/native connection limits
+      const subChunks = [];
+      for (let i = 0; i < subcategories.length; i += 3) {
+        subChunks.push(subcategories.slice(i, i + 3));
       }
 
-      // Ensure we waited at least 800ms before showing results
-      await minLoadingPromise;
+      for (const chunk of subChunks) {
+        await Promise.all(chunk.map(async (sub) => {
+          let rawResults = [];
+          const isWorld = (sub as any).isWorld === true || isWorldMode;
 
+          if (sub.type && !sub.query) {
+            rawResults = await searchNearbyPlaces(
+              isWorld ? 0 : userLocation.lat,
+              isWorld ? 0 : userLocation.lng,
+              sub.type
+            );
+          } else if (sub.query) {
+            let q = isWorld ? sub.query : `${sub.query} in ${locationName}`;
+            const isFoodRelated = activeCategory === 'food' ||
+              sub.title.toLowerCase().includes('food') ||
+              sub.title.toLowerCase().includes('gastro') ||
+              sub.query.toLowerCase().includes('restaurant') ||
+              sub.query.toLowerCase().includes('cafe');
+
+            if (halalEnabled && isFoodRelated) {
+              q = `${q} halal`;
+            }
+
+            rawResults = await searchPlaces(
+              q,
+              isWorld ? undefined : userLocation.lat,
+              isWorld ? undefined : userLocation.lng,
+              sub.type
+            );
+          }
+
+          // Strict Filter Logic
+          const filtered = rawResults.filter((item: any) => {
+            // Category-specific filters
+            const detectedCategory = getCategoryFromTypes(item.types, item.name);
+            if (!isCompatibleWithRanking(detectedCategory, sub.title, sub.id)) return false;
+
+            const nameLower = item.name.toLowerCase();
+            if (sub.id.includes('nightclub') || sub.id.includes('disco') || sub.id.includes('bar') || sub.type === 'night_club') {
+              const isLikelyRestaurant = nameLower.includes('restaurant') || nameLower.includes('kitchen') || nameLower.includes('grill') || nameLower.includes('steakhouse');
+              if (isLikelyRestaurant && !(nameLower.includes('disco') || nameLower.includes('club'))) return false;
+            }
+
+            if (halalEnabled) {
+              const types = item.types || [];
+              const haramTypes = ['night_club', 'bar', 'liquor_store', 'distillery', 'winery'];
+              if (types.some((t: string) => haramTypes.includes(t))) return false;
+              if (nameLower.includes('nightclub') || nameLower.includes('disco') || nameLower.includes('club') || nameLower.includes('bar') || nameLower.includes('drinks') || nameLower.includes('pub')) return false;
+            }
+
+            return true;
+          });
+
+          const formatted = formatPlaces(filtered);
+
+          // deduplicate across rankings in the same category
+          const uniqueFormatted = formatted.filter(item => {
+            if (usedIdsSet.has(item.id)) return false;
+            return true;
+          });
+
+          // threshold lowered to 1 based on previous improvements
+          if (uniqueFormatted.length < 1) {
+            resultsMap[sub.id] = [];
+            return;
+          }
+
+          const sorted = uniqueFormatted.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return (b.reviewCount || 0) - (a.reviewCount || 0);
+          }).slice(0, 3);
+
+          sorted.forEach(item => usedIdsSet.add(item.id));
+          resultsMap[sub.id] = sorted;
+        }));
+      }
+
+      setLastFetchedLocation({ ...userLocation });
+      await minLoadingPromise;
       setRankingsData(prev => ({ ...prev, ...resultsMap }));
     } catch (error) {
       console.error('Error fetching rankings:', error);

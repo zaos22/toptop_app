@@ -86,8 +86,8 @@ export const watchLocation = async (callback: (location: UserLocation) => void) 
     return await Location.watchPositionAsync(
         {
             accuracy: Location.Accuracy.Balanced,
-            timeInterval: 5000,
-            distanceInterval: 10,
+            timeInterval: 10000,
+            distanceInterval: 100,
         },
         (location) => {
             callback({

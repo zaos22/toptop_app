@@ -1,6 +1,31 @@
 import axios from 'axios';
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyCG8Hd_HrezAiNrccIT5UIGmvs5mIq7_1U';
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBJ4dpsHNjF3HOLhV1xxixdR-w6gQkMc1Q';
+
+// --- CACHE SYSTEM ---
+interface CacheEntry {
+    data: any;
+    timestamp: number;
+}
+
+const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+const apiCache: Record<string, CacheEntry> = {};
+
+const getFromCache = (key: string) => {
+    const entry = apiCache[key];
+    if (entry && Date.now() - entry.timestamp < CACHE_TTL) {
+        return entry.data;
+    }
+    return null;
+};
+
+const setToCache = (key: string, data: any) => {
+    apiCache[key] = {
+        data,
+        timestamp: Date.now()
+    };
+};
+// --------------------
 
 export interface GooglePlaceDetails {
     place_id: string;
@@ -9,8 +34,8 @@ export interface GooglePlaceDetails {
     rating?: number;
     user_ratings_total?: number;
     website?: string;
-    url?: string; // Google Maps URL which often contains menu/info
-    menu?: string; // Some places might have a direct menu field
+    url?: string;
+    menu?: string;
     formatted_phone_number?: string;
     photos?: Array<{ photo_reference: string }>;
     reviews?: Array<{
@@ -32,11 +57,17 @@ export interface GooglePlaceDetails {
 }
 
 export const getGooglePlaceDetails = async (placeId: string): Promise<GooglePlaceDetails | null> => {
+    const cacheKey = `details_${placeId}`;
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
     try {
         const response = await axios.get(
             `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOGLE_MAPS_API_KEY}&language=es`
         );
-        return response.data.result;
+        const result = response.data.result;
+        if (result) setToCache(cacheKey, result);
+        return result;
     } catch (error) {
         console.error('Error fetching Google Place details:', error);
         return null;
@@ -44,11 +75,21 @@ export const getGooglePlaceDetails = async (placeId: string): Promise<GooglePlac
 };
 
 export const searchNearbyPlaces = async (lat: number, lng: number, type: string = 'restaurant') => {
+    // Round coordinates to ~100m to increase cache hit rate
+    const cacheLat = Math.round(lat * 1000) / 1000;
+    const cacheLng = Math.round(lng * 1000) / 1000;
+    const cacheKey = `nearby_${cacheLat}_${cacheLng}_${type}`;
+    
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
     try {
         const response = await axios.get(
             `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=5000&type=${type}&key=${GOOGLE_MAPS_API_KEY}&language=es`
         );
-        return response.data.results;
+        const results = response.data.results || [];
+        setToCache(cacheKey, results);
+        return results;
     } catch (error) {
         console.error('Error searching nearby places:', error);
         return [];
@@ -56,6 +97,14 @@ export const searchNearbyPlaces = async (lat: number, lng: number, type: string 
 };
 
 export const searchPlaces = async (query: string, lat?: number, lng?: number, type?: string) => {
+    // Cache key based on query and location
+    const cacheLat = lat ? Math.round(lat * 100) / 100 : 0;
+    const cacheLng = lng ? Math.round(lng * 100) / 100 : 0;
+    const cacheKey = `search_${query}_${cacheLat}_${cacheLng}_${type || ''}`;
+    
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
     try {
         let url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}&language=es`;
         if (lat && lng) {
@@ -65,7 +114,9 @@ export const searchPlaces = async (query: string, lat?: number, lng?: number, ty
             url += `&type=${type}`;
         }
         const response = await axios.get(url);
-        return response.data.results;
+        const results = response.data.results || [];
+        setToCache(cacheKey, results);
+        return results;
     } catch (error) {
         console.error('Error searching places:', error);
         return [];
@@ -73,11 +124,17 @@ export const searchPlaces = async (query: string, lat?: number, lng?: number, ty
 };
 
 export const searchLocations = async (query: string) => {
+    const cacheKey = `autocomplete_${query.toLowerCase().trim()}`;
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
     try {
         const response = await axios.get(
             `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=(regions)&key=${GOOGLE_MAPS_API_KEY}&language=es`
         );
-        return response.data.predictions;
+        const results = response.data.predictions || [];
+        setToCache(cacheKey, results);
+        return results;
     } catch (error) {
         console.error('Error searching locations:', error);
         return [];
@@ -85,11 +142,17 @@ export const searchLocations = async (query: string) => {
 };
 
 export const getPlaceGeometry = async (placeId: string) => {
+    const cacheKey = `geometry_${placeId}`;
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
     try {
         const response = await axios.get(
             `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=${GOOGLE_MAPS_API_KEY}`
         );
-        return response.data.result.geometry.location;
+        const result = response.data.result?.geometry?.location;
+        if (result) setToCache(cacheKey, result);
+        return result;
     } catch (error) {
         console.error('Error getting place geometry:', error);
         return null;

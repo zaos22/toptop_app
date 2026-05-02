@@ -99,8 +99,8 @@ export const getCategoryFromTypes = (types?: string[], name?: string): string =>
 
         // 1. Strict Exclusions (to avoid things like "Druni" in Gyms)
         const perfumeKeywords = ['druni', 'primor', 'perfumery', 'perfume', 'rituals', 'kiko milano', 'douglas', 'claire'];
-        if (perfumeKeywords.some(kw => lowerName.includes(kw)) || 
-            types?.includes('cosmetics_store') || 
+        if (perfumeKeywords.some(kw => lowerName.includes(kw)) ||
+            types?.includes('cosmetics_store') ||
             types?.includes('drugstore')) {
             return 'Perfumery/Beauty';
         }
@@ -119,7 +119,7 @@ export const getCategoryFromTypes = (types?: string[], name?: string): string =>
         if (lowerName.includes('mural') || lowerName.includes('graffiti') || lowerName.includes('street art')) {
             return 'Mural';
         }
-        
+
         // Gym keywords (to ensure they are classified correctly even if Google says 'health')
         if (lowerName.includes('gym') || lowerName.includes('fitness') || lowerName.includes('crossfit')) {
             return 'Gym';

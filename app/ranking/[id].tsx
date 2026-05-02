@@ -1,14 +1,13 @@
 import { BounceMarqueeText } from '@/components/BounceMarqueeText';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
+import { useSettings } from '@/context/SettingsContext';
 import { searchNearbyPlaces, searchPlaces } from '@/services/googleMapsService';
+import { isCompatibleWithRanking } from '@/utils/categoryUtils';
 import { getPriceInfo } from '@/utils/priceUtils';
 import { formatPlaces } from '@/utils/rankingDefinitions';
-import { isCompatibleWithRanking } from '@/utils/categoryUtils';
-import { useSettings } from '@/context/SettingsContext';
-import { ShieldAlert } from 'lucide-react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, ShieldAlert, TrendingUp } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,8 +24,8 @@ export default function RankingDetailScreen() {
     const [data, setData] = useState<any[]>([]);
 
     const isRestrictedRanking = halalEnabled && (
-        id === 'nightlife' || 
-        (title as string)?.toLowerCase().includes('bar') || 
+        id === 'nightlife' ||
+        (title as string)?.toLowerCase().includes('bar') ||
         (title as string)?.toLowerCase().includes('nightlife') ||
         (title as string)?.toLowerCase().includes('club')
     );

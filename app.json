@@ -17,7 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.zaos22.toptop",
       "config": {
-        "googleMapsApiKey": "AIzaSyCG8Hd_HrezAiNrccIT5UIGmvs5mIq7_1U"
+        "googleMapsApiKey": "AIzaSyBJ4dpsHNjF3HOLhV1xxixdR-w6gQkMc1Q"
       }
     },
     "android": {
@@ -29,7 +29,7 @@
       },
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyCG8Hd_HrezAiNrccIT5UIGmvs5mIq7_1U"
+          "apiKey": "AIzaSyBJ4dpsHNjF3HOLhV1xxixdR-w6gQkMc1Q"
         }
       },
       "adaptiveIcon": {

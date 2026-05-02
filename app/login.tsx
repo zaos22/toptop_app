@@ -7,9 +7,9 @@ import { BiometricService } from '@/services/biometricService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useRouter } from 'expo-router';
-import { ChevronRight, Eye, EyeOff, Fingerprint, Lock, Mail, ShieldCheck } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ChevronRight, Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // WebBrowser.maybeCompleteAuthSession() ya está en AuthContext
@@ -27,6 +27,25 @@ export default function LoginScreen() {
     const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
     const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
     const [selectedAccount, setSelectedAccount] = useState<SavedAccount | null>(null);
+
+    // Animación de entrada: fade + slide up
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(40)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 500,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, []);
 
     useEffect(() => {
         loadSavedAccounts();
@@ -300,130 +319,132 @@ export default function LoginScreen() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View style={styles.heroSection}>
-                        <View style={[styles.mainLogoContainer, { backgroundColor: theme.backgroundSecondary, borderColor: theme.card }]}>
-                            <Image 
-                                source={colorScheme?.includes('dark') ? require('../assets/images/Logo_Oscuro_login.png') : require('../assets/images/Logo_login.png')}
-                                style={styles.mainLogo}
-                                resizeMode="cover"
-                            />
-                        </View>
-                    </View>
-
-                    {savedAccounts.length > 0 && (
-                        <View style={styles.savedAccountsSection}>
-                            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>RECENT ACCOUNTS</Text>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.accountsScroll}>
-                                {savedAccounts.map(acc => (
-                                    <TouchableOpacity
-                                        key={acc.id}
-                                        style={[
-                                            styles.accountCard,
-                                            { backgroundColor: theme.card },
-                                            selectedAccount?.id === acc.id && { borderColor: theme.primary, borderWidth: 2 }
-                                        ]}
-                                        onPress={() => handleAccountSelect(acc)}
-                                        onLongPress={() => handleQuickLogin(acc.id)}
-                                    >
-                                        <Image
-                                            source={{ uri: acc.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80' }}
-                                            style={styles.avatarMini}
-                                        />
-                                        <Text style={[styles.accountName, { color: theme.text }]} numberOfLines={1}>{acc.displayName.split(' ')[0]}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        </View>
-                    )}
-
-                    <View style={styles.formSection}>
-                        <View style={[styles.inputContainer, { backgroundColor: theme.card, borderColor: theme.card }]}>
-                            <Mail size={20} color={theme.textSecondary} style={styles.inputIcon} />
-                            <TextInput
-                                style={[styles.input, { color: theme.text }]}
-                                placeholder="Email or Username"
-                                placeholderTextColor={theme.textSecondary}
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                spellCheck={false}
-                                textContentType="username"
-                                value={identifier}
-                                onChangeText={setIdentifier}
-                            />
+                    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+                        <View style={styles.heroSection}>
+                            <View style={[styles.mainLogoContainer, { backgroundColor: theme.backgroundSecondary, borderColor: theme.card }]}>
+                                <Image
+                                    source={colorScheme?.includes('dark') ? require('../assets/images/Logo_Oscuro_login.png') : require('../assets/images/Logo_login.png')}
+                                    style={styles.mainLogo}
+                                    resizeMode="cover"
+                                />
+                            </View>
                         </View>
 
-                        <View style={[styles.inputContainer, { backgroundColor: theme.card, borderColor: theme.card }]}>
-                            <Lock size={20} color={theme.textSecondary} style={styles.inputIcon} />
-                            <TextInput
-                                style={[styles.input, { color: theme.text }]}
-                                placeholder="Password"
-                                placeholderTextColor={theme.textSecondary}
-                                secureTextEntry={!showPassword}
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                spellCheck={false}
-                                textContentType="password"
-                                value={password}
-                                onChangeText={setPassword}
-                            />
-                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                                {showPassword ? (
-                                    <EyeOff size={20} color={theme.textSecondary} />
-                                ) : (
-                                    <Eye size={20} color={theme.textSecondary} />
-                                )}
+                        {savedAccounts.length > 0 && (
+                            <View style={styles.savedAccountsSection}>
+                                <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>RECENT ACCOUNTS</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.accountsScroll}>
+                                    {savedAccounts.map(acc => (
+                                        <TouchableOpacity
+                                            key={acc.id}
+                                            style={[
+                                                styles.accountCard,
+                                                { backgroundColor: theme.card },
+                                                selectedAccount?.id === acc.id && { borderColor: theme.primary, borderWidth: 2 }
+                                            ]}
+                                            onPress={() => handleAccountSelect(acc)}
+                                            onLongPress={() => handleQuickLogin(acc.id)}
+                                        >
+                                            <Image
+                                                source={{ uri: acc.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80' }}
+                                                style={styles.avatarMini}
+                                            />
+                                            <Text style={[styles.accountName, { color: theme.text }]} numberOfLines={1}>{acc.displayName.split(' ')[0]}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        )}
+
+                        <View style={styles.formSection}>
+                            <View style={[styles.inputContainer, { backgroundColor: theme.card, borderColor: theme.card }]}>
+                                <Mail size={20} color={theme.textSecondary} style={styles.inputIcon} />
+                                <TextInput
+                                    style={[styles.input, { color: theme.text }]}
+                                    placeholder="Email or Username"
+                                    placeholderTextColor={theme.textSecondary}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    spellCheck={false}
+                                    textContentType="username"
+                                    value={identifier}
+                                    onChangeText={setIdentifier}
+                                />
+                            </View>
+
+                            <View style={[styles.inputContainer, { backgroundColor: theme.card, borderColor: theme.card }]}>
+                                <Lock size={20} color={theme.textSecondary} style={styles.inputIcon} />
+                                <TextInput
+                                    style={[styles.input, { color: theme.text }]}
+                                    placeholder="Password"
+                                    placeholderTextColor={theme.textSecondary}
+                                    secureTextEntry={!showPassword}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    spellCheck={false}
+                                    textContentType="password"
+                                    value={password}
+                                    onChangeText={setPassword}
+                                />
+                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                                    {showPassword ? (
+                                        <EyeOff size={20} color={theme.textSecondary} />
+                                    ) : (
+                                        <Eye size={20} color={theme.textSecondary} />
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+
+                            <TouchableOpacity style={styles.forgotBtn} onPress={handleForgotPassword}>
+                                <Text style={[styles.forgotText, { color: theme.primary }]}>Forgot Password?</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.loginBtn, { backgroundColor: theme.primary }]}
+                                onPress={handleLogin}
+                            >
+                                <>
+                                    <Text style={styles.loginBtnText}>Log In</Text>
+                                    <ChevronRight size={20} color="#1C1F26" />
+                                </>
+                            </TouchableOpacity>
+
+                            <View style={styles.dividerContainer}>
+                                <View style={[styles.divider, { backgroundColor: theme.neutral + '40' }]} />
+                                <Text style={[styles.dividerText, { color: theme.textSecondary }]}>OR CONTINUE WITH</Text>
+                                <View style={[styles.divider, { backgroundColor: theme.neutral + '40' }]} />
+                            </View>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.googleBtn,
+                                    {
+                                        backgroundColor: colorScheme?.toLowerCase().includes('dark') ? '#1C1F26' : '#FFFFFF',
+                                        borderColor: colorScheme?.toLowerCase().includes('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                                    }
+                                ]}
+                                onPress={() => handleGoogleLogin()}
+                            >
+                                <View style={styles.googleIconContainer}>
+                                    <Image
+                                        source={{ uri: 'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png' }}
+                                        style={styles.googleIcon}
+                                        resizeMode="contain"
+                                    />
+                                </View>
+                                <Text style={[styles.googleBtnText, { color: theme.text }]}>
+                                    Continue with Google
+                                </Text>
                             </TouchableOpacity>
                         </View>
 
-                        <TouchableOpacity style={styles.forgotBtn} onPress={handleForgotPassword}>
-                            <Text style={[styles.forgotText, { color: theme.primary }]}>Forgot Password?</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.loginBtn, { backgroundColor: theme.primary }]}
-                            onPress={handleLogin}
-                        >
-                            <>
-                                <Text style={styles.loginBtnText}>Log In</Text>
-                                <ChevronRight size={20} color="#1C1F26" />
-                            </>
-                        </TouchableOpacity>
-
-                        <View style={styles.dividerContainer}>
-                            <View style={[styles.divider, { backgroundColor: theme.neutral + '40' }]} />
-                            <Text style={[styles.dividerText, { color: theme.textSecondary }]}>OR CONTINUE WITH</Text>
-                            <View style={[styles.divider, { backgroundColor: theme.neutral + '40' }]} />
+                        <View style={styles.footer}>
+                            <Text style={[styles.footerText, { color: theme.textSecondary }]}>Don't have an account? </Text>
+                            <TouchableOpacity onPress={() => router.push('/signup')}>
+                                <Text style={[styles.footerLink, { color: theme.primary }]}>Sign Up</Text>
+                            </TouchableOpacity>
                         </View>
-
-                        <TouchableOpacity
-                            style={[
-                                styles.googleBtn,
-                                {
-                                    backgroundColor: colorScheme?.toLowerCase().includes('dark') ? '#1C1F26' : '#FFFFFF',
-                                    borderColor: colorScheme?.toLowerCase().includes('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-                                }
-                            ]}
-                            onPress={() => handleGoogleLogin()}
-                        >
-                            <View style={styles.googleIconContainer}>
-                                <Image
-                                    source={{ uri: 'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png' }}
-                                    style={styles.googleIcon}
-                                    resizeMode="contain"
-                                />
-                            </View>
-                            <Text style={[styles.googleBtnText, { color: theme.text }]}>
-                                Continue with Google
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.footer}>
-                        <Text style={[styles.footerText, { color: theme.textSecondary }]}>Don't have an account? </Text>
-                        <TouchableOpacity onPress={() => router.push('/signup')}>
-                            <Text style={[styles.footerLink, { color: theme.primary }]}>Sign Up</Text>
-                        </TouchableOpacity>
-                    </View>
+                    </Animated.View>
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
